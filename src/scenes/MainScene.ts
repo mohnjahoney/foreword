@@ -44,6 +44,12 @@ export class MainScene extends Phaser.Scene {
   }
 
   create(data: SceneData = {}): void {
+    this.tileSlots = []
+    this.slotBackgrounds = []
+    this.rowOutlines = []
+    this.selectedSlot = undefined
+    this.swapAnimating = false
+    this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
     this.puzzle = createForewordPuzzle(Math.random, {
