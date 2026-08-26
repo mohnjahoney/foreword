@@ -22,6 +22,7 @@ export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
   private tileSlots: TileVisual[] = []
   private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
+  private tileOutlines: Phaser.GameObjects.Rectangle[] = []
   private selectedSlot: number | undefined
   private message!: Phaser.GameObjects.Text
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
@@ -46,6 +47,7 @@ export class MainScene extends Phaser.Scene {
   create(data: SceneData = {}): void {
     this.tileSlots = []
     this.slotBackgrounds = []
+    this.tileOutlines = []
     this.rowOutlines = []
     this.selectedSlot = undefined
     this.swapAnimating = false
@@ -162,6 +164,7 @@ export class MainScene extends Phaser.Scene {
         const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0).setDepth(0).setInteractive({ useHandCursor: true })
         background.on("pointerdown", () => this.selectTile(slotIndex))
         this.slotBackgrounds.push(background)
+        this.tileOutlines.push(this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE).setOrigin(0, 0).setFillStyle(0, 0).setStrokeStyle(0).setDepth(3))
 
         const tile = board.tiles[slotIndex]
         if (tile === undefined) return
@@ -169,6 +172,7 @@ export class MainScene extends Phaser.Scene {
         this.tileSlots.push({ tile, text })
       })
     })
+    this.updateLetterFeedback()
   }
 
   private selectTile(slotIndex: number): void {
@@ -280,6 +284,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateRowFeedback(): void {
+    this.updateLetterFeedback()
     this.puzzle.rows.forEach((row, rowIndex) => {
       const word = this.tileSlots
         .slice(rowIndex * 5, (rowIndex + 1) * 5)
@@ -294,6 +299,12 @@ export class MainScene extends Phaser.Scene {
       } else {
         outline.setStrokeStyle(0)
       }
+    })
+  }
+
+  private updateLetterFeedback(): void {
+    this.tileOutlines.forEach((outline, slotIndex) => {
+      outline.setStrokeStyle(this.isLetterCorrectAtSlot(slotIndex) ? 4 : 0, 0x4c7b43)
     })
   }
 
