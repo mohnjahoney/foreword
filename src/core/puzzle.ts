@@ -16,11 +16,13 @@ export interface ForewordPuzzle {
 export interface PuzzleSetup {
   requireTargetLetterInEachRow?: boolean
   requireGreenTileInEachRow?: boolean
+  useAnswerWordsForRows?: boolean
 }
 
 export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
   const target = choose(ANSWER_WORDS, random)
-  const guesses = shuffled(ALLOWED_WORDS, random)
+  const guessWords = setup.useAnswerWordsForRows ? ANSWER_WORDS : ALLOWED_WORDS
+  const guesses = shuffled(guessWords, random)
     .filter((word) => word !== target)
     .filter((word) => !setup.requireTargetLetterInEachRow || evaluateGuess(word, target).some((result) => result !== "absent"))
     .filter((word) => !setup.requireGreenTileInEachRow || evaluateGuess(word, target).some((result) => result === "correct"))

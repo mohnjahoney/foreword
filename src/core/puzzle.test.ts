@@ -25,4 +25,9 @@ describe("createForewordPuzzle", () => {
       expect(row.pattern.some((result) => result === "correct")).toBe(true)
     })
   })
+
+  it("can draw rows from the smaller answer-word list", () => {
+    const puzzle = createForewordPuzzle(() => 0.25, { useAnswerWordsForRows: true })
+    expect(puzzle.rows).toHaveLength(ROW_COUNT)
+  })
 })
