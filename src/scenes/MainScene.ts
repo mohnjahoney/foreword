@@ -51,13 +51,13 @@ export class MainScene extends Phaser.Scene {
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
         const x = ROW_LEFT + index * (CELL_SIZE + CELL_GAP)
-        const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+        const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0).setDepth(0).setInteractive({ useHandCursor: true })
         background.on("pointerdown", () => this.selectTile(slotIndex))
         this.slotBackgrounds.push(background)
 
         const tile = board.tiles[slotIndex]
         if (tile === undefined) return
-        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10).setInteractive({ useHandCursor: true })
         text.on("pointerdown", () => this.selectTile(slotIndex))
         this.tileSlots.push({ tile, text })
       })
@@ -126,6 +126,8 @@ export class MainScene extends Phaser.Scene {
         second.text.setPosition(secondPoint.x, secondPoint.y)
       },
       onComplete: () => {
+        first.text.setPosition(startSecond.x, startSecond.y).setDepth(10)
+        second.text.setPosition(startFirst.x, startFirst.y).setDepth(10)
         this.swapAnimating = false
         this.updateRowFeedback()
       },
