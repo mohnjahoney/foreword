@@ -89,8 +89,7 @@ export class MainScene extends Phaser.Scene {
 
         const tile = board.tiles[slotIndex]
         if (tile === undefined) return
-        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10).setInteractive({ useHandCursor: true })
-        text.on("pointerdown", () => this.selectTile(slotIndex))
+        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10)
         this.tileSlots.push({ tile, text })
       })
     })
