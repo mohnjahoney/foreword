@@ -22,6 +22,8 @@ export class MainScene extends Phaser.Scene {
   private selectedSlot: number | undefined
   private message!: Phaser.GameObjects.Text
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
+  private swapDirection = 1
+  private swapAnimating = false
 
   constructor() {
     super("main")
@@ -63,6 +65,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private selectTile(slotIndex: number): void {
+    if (this.swapAnimating) return
     if (this.selectedSlot === undefined) {
       this.selectedSlot = slotIndex
       this.updateSelection()
@@ -85,15 +88,48 @@ export class MainScene extends Phaser.Scene {
     if (first === undefined || second === undefined) return
     this.tileSlots[firstSlot] = second
     this.tileSlots[secondSlot] = first
-    this.animateTile(second, firstSlot)
-    this.animateTile(first, secondSlot)
+    this.animateExchange(first, second, firstSlot, secondSlot)
     this.message.setText("Letters swapped. Keep going.")
     this.updateRowFeedback()
   }
 
-  private animateTile(visual: TileVisual, slotIndex: number): void {
-    const { x, y } = this.slotPosition(slotIndex)
-    this.tweens.add({ targets: visual.text, x: x + CELL_SIZE / 2, y: y + CELL_SIZE / 2, duration: 220, ease: "Cubic.easeOut" })
+  private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
+    const startFirst = this.slotCenter(firstSlot)
+    const startSecond = this.slotCenter(secondSlot)
+    const distanceX = startSecond.x - startFirst.x
+    const distanceY = startSecond.y - startFirst.y
+    const distance = Math.hypot(distanceX, distanceY)
+    const perpendicular = { x: -distanceY / distance, y: distanceX / distance }
+    const arcHeight = Math.min(40, Math.max(20, distance * 0.3))
+    const midpoint = { x: (startFirst.x + startSecond.x) / 2, y: (startFirst.y + startSecond.y) / 2 }
+    const firstControl = {
+      x: midpoint.x + perpendicular.x * arcHeight * this.swapDirection,
+      y: midpoint.y + perpendicular.y * arcHeight * this.swapDirection,
+    }
+    const secondControl = {
+      x: midpoint.x - perpendicular.x * arcHeight * this.swapDirection,
+      y: midpoint.y - perpendicular.y * arcHeight * this.swapDirection,
+    }
+    this.swapDirection *= -1
+    this.swapAnimating = true
+    this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 300,
+      ease: "Sine.easeInOut",
+      onUpdate: (tween) => {
+        const progress = tween.getValue()
+        if (progress === null) return
+        const firstPoint = quadraticPoint(startFirst, firstControl, startSecond, progress)
+        const secondPoint = quadraticPoint(startSecond, secondControl, startFirst, progress)
+        first.text.setPosition(firstPoint.x, firstPoint.y)
+        second.text.setPosition(secondPoint.x, secondPoint.y)
+      },
+      onComplete: () => {
+        this.swapAnimating = false
+        this.updateRowFeedback()
+      },
+    })
   }
 
   private updateSelection(): void {
@@ -127,8 +163,26 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
+  private slotCenter(slotIndex: number): { x: number; y: number } {
+    const position = this.slotPosition(slotIndex)
+    return { x: position.x + CELL_SIZE / 2, y: position.y + CELL_SIZE / 2 }
+  }
+
   private colorFor(result: ForewordPuzzle["rows"][number]["pattern"][number]): number {
     return COLORS[result]
+  }
+}
+
+function quadraticPoint(
+  start: { x: number; y: number },
+  control: { x: number; y: number },
+  end: { x: number; y: number },
+  progress: number,
+): { x: number; y: number } {
+  const remaining = 1 - progress
+  return {
+    x: remaining * remaining * start.x + 2 * remaining * progress * control.x + progress * progress * end.x,
+    y: remaining * remaining * start.y + 2 * remaining * progress * control.y + progress * progress * end.y,
   }
 }
 
