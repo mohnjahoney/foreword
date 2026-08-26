@@ -9,20 +9,16 @@ const CELL_SIZE = 52
 const CELL_GAP = 7
 const ROW_LEFT = 75
 const ROW_TOP = 175
-const ROW_GAP = 78
-const POOL_LEFT = 52
-const POOL_TOP = 548
-const POOL_COLUMNS = 10
 
 interface TileVisual {
   tile: LetterTile
-  background: Phaser.GameObjects.Rectangle
   text: Phaser.GameObjects.Text
 }
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
   private tileSlots: TileVisual[] = []
+  private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
   private selectedSlot: number | undefined
   private message!: Phaser.GameObjects.Text
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
@@ -40,31 +36,29 @@ export class MainScene extends Phaser.Scene {
 
     this.add.text(31, 112, "TARGET", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", letterSpacing: 2 })
     this.add.text(31, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
-    this.buildPatterns()
-    this.buildTilePool()
-    this.message = this.add.text(31, 650, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
+    this.buildBoard()
+    this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
   }
 
-  private buildPatterns(): void {
+  private buildBoard(): void {
+    const board = createScrambledBoard(this.puzzle)
     this.puzzle.rows.forEach((row, rowIndex) => {
-      const y = ROW_TOP + rowIndex * ROW_GAP
+      const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
       this.add.text(31, y + 14, `${rowIndex + 1}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold" })
       this.rowOutlines.push(this.add.rectangle(ROW_LEFT - 7, y - 7, 5 * CELL_SIZE + 4 * CELL_GAP + 14, CELL_SIZE + 14).setOrigin(0, 0).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
       row.pattern.forEach((result, index) => {
-        this.add.rectangle(ROW_LEFT + index * (CELL_SIZE + CELL_GAP), y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0)
-      })
-    })
-  }
+        const slotIndex = rowIndex * 5 + index
+        const x = ROW_LEFT + index * (CELL_SIZE + CELL_GAP)
+        const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+        background.on("pointerdown", () => this.selectTile(slotIndex))
+        this.slotBackgrounds.push(background)
 
-  private buildTilePool(): void {
-    const board = createScrambledBoard(this.puzzle)
-    board.tiles.forEach((tile, slotIndex) => {
-      const { x, y } = this.slotPosition(slotIndex)
-      const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, COLORS.tile).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-      const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setInteractive({ useHandCursor: true })
-      background.on("pointerdown", () => this.selectTile(slotIndex))
-      text.on("pointerdown", () => this.selectTile(slotIndex))
-      this.tileSlots.push({ tile, background, text })
+        const tile = board.tiles[slotIndex]
+        if (tile === undefined) return
+        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+        text.on("pointerdown", () => this.selectTile(slotIndex))
+        this.tileSlots.push({ tile, text })
+      })
     })
   }
 
@@ -99,11 +93,11 @@ export class MainScene extends Phaser.Scene {
 
   private animateTile(visual: TileVisual, slotIndex: number): void {
     const { x, y } = this.slotPosition(slotIndex)
-    this.tweens.add({ targets: [visual.background, visual.text], x, y, duration: 220, ease: "Cubic.easeOut" })
+    this.tweens.add({ targets: visual.text, x: x + CELL_SIZE / 2, y: y + CELL_SIZE / 2, duration: 220, ease: "Cubic.easeOut" })
   }
 
   private updateSelection(): void {
-    this.tileSlots.forEach((visual, slotIndex) => visual.background.setStrokeStyle(slotIndex === this.selectedSlot ? 3 : 0, COLORS.selected))
+    this.slotBackgrounds.forEach((background, slotIndex) => background.setStrokeStyle(slotIndex === this.selectedSlot ? 3 : 0, COLORS.selected))
   }
 
   private updateRowFeedback(): void {
@@ -125,7 +119,12 @@ export class MainScene extends Phaser.Scene {
   }
 
   private slotPosition(slotIndex: number): { x: number; y: number } {
-    return { x: POOL_LEFT + (slotIndex % POOL_COLUMNS) * (CELL_SIZE + CELL_GAP), y: POOL_TOP + Math.floor(slotIndex / POOL_COLUMNS) * (CELL_SIZE + CELL_GAP) }
+    const rowIndex = Math.floor(slotIndex / 5)
+    const columnIndex = slotIndex % 5
+    return {
+      x: ROW_LEFT + columnIndex * (CELL_SIZE + CELL_GAP),
+      y: ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26),
+    }
   }
 
   private colorFor(result: ForewordPuzzle["rows"][number]["pattern"][number]): number {
