@@ -11,4 +11,11 @@ describe("createForewordPuzzle", () => {
       expect(evaluateGuess(row.intendedGuess, puzzle.target)).toEqual(row.pattern)
     })
   })
+
+  it("can require every row to share a target letter", () => {
+    const puzzle = createForewordPuzzle(() => 0.25, { requireTargetLetterInEachRow: true })
+    puzzle.rows.forEach((row) => {
+      expect(row.pattern.some((result) => result !== "absent")).toBe(true)
+    })
+  })
 })

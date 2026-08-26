@@ -13,10 +13,15 @@ export interface ForewordPuzzle {
   rows: ForewordRow[]
 }
 
-export function createForewordPuzzle(random = Math.random): ForewordPuzzle {
+export interface PuzzleSetup {
+  requireTargetLetterInEachRow?: boolean
+}
+
+export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
   const target = choose(ANSWER_WORDS, random)
   const guesses = shuffled(ALLOWED_WORDS, random)
     .filter((word) => word !== target)
+    .filter((word) => !setup.requireTargetLetterInEachRow || evaluateGuess(word, target).some((result) => result !== "absent"))
     .slice(0, ROW_COUNT)
 
   if (guesses.length !== ROW_COUNT) {

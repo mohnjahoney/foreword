@@ -1,7 +1,7 @@
 import Phaser from "phaser"
 import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
-import { createForewordPuzzle, type ForewordPuzzle } from "../core/puzzle"
+import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { isAllowedWord } from "../core/words"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
@@ -15,6 +15,8 @@ interface TileVisual {
   text: Phaser.GameObjects.Text
 }
 
+interface SceneData extends PuzzleSetup {}
+
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
   private tileSlots: TileVisual[] = []
@@ -24,22 +26,52 @@ export class MainScene extends Phaser.Scene {
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private swapDirection = 1
   private swapAnimating = false
+  private requireTargetLetterInEachRow = false
+  private devPanel!: Phaser.GameObjects.Container
+  private devToggle!: Phaser.GameObjects.Rectangle
 
   constructor() {
     super("main")
   }
 
-  create(): void {
-    this.puzzle = createForewordPuzzle()
+  create(data: SceneData = {}): void {
+    this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
+    this.puzzle = createForewordPuzzle(Math.random, { requireTargetLetterInEachRow: this.requireTargetLetterInEachRow })
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
     this.add.text(31, 70, "Reassemble the four words from one shared pool.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px" })
     const newPuzzle = this.add.text(398, 35, "NEW PUZZLE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true })
-    newPuzzle.on("pointerdown", () => this.scene.restart())
+    newPuzzle.on("pointerdown", () => this.scene.restart({ requireTargetLetterInEachRow: this.requireTargetLetterInEachRow }))
+    const devButton = this.add.text(398, 66, "DEV", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true })
+    devButton.on("pointerdown", () => this.devPanel.setVisible(!this.devPanel.visible))
 
     this.add.text(31, 112, "TARGET", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", letterSpacing: 2 })
     this.add.text(31, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
     this.buildBoard()
     this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
+    this.buildDevPanel()
+  }
+
+  private buildDevPanel(): void {
+    this.devPanel = this.add.container(25, 95).setDepth(50)
+    const panel = this.add.rectangle(0, 0, 380, 205, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
+    const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1 })
+    const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    close.on("pointerdown", () => this.devPanel.setVisible(false))
+    const toggleLabel = this.add.text(20, 68, "Each row shares a letter with target", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 } })
+    this.devToggle = this.add.rectangle(330, 73, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    this.devToggle.on("pointerdown", () => {
+      this.requireTargetLetterInEachRow = !this.requireTargetLetterInEachRow
+      this.updateDevToggle()
+    })
+    const note = this.add.text(20, 125, "New puzzles use this setting.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, note])
+    this.updateDevToggle()
+    this.devPanel.setVisible(false)
+  }
+
+  private updateDevToggle(): void {
+    this.devToggle.setFillStyle(this.requireTargetLetterInEachRow ? 0x71845f : 0xc6bdae)
+    this.devToggle.setStrokeStyle(2, this.requireTargetLetterInEachRow ? 0x4c7b43 : 0x756d5e)
   }
 
   private buildBoard(): void {
