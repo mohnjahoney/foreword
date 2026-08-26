@@ -2,7 +2,7 @@ import Phaser from "phaser"
 import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
-import { isAllowedWord } from "../core/words"
+import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
 const CELL_SIZE = 52
@@ -131,7 +131,7 @@ export class MainScene extends Phaser.Scene {
       this.useAnswerWordsForRows = !this.useAnswerWordsForRows
       this.updateDevToggle()
     })
-    const note = this.add.text(20, 235, "New puzzles use these settings.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    const note = this.add.text(20, 235, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
     this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, answerWordsLabel, this.devAnswerWordsToggle, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
@@ -140,6 +140,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   private setDevPanelVisible(visible: boolean): void {
+    if (!visible && this.devPanel.visible && !this.puzzleSatisfiesSetup(this.currentPuzzleSetup())) {
+      this.scene.restart(this.currentPuzzleSetup())
+      return
+    }
     this.devPanel.setVisible(visible)
     if (visible) {
       this.devOverlay.setInteractive()
@@ -156,6 +160,23 @@ export class MainScene extends Phaser.Scene {
       this.devGreenToggle.disableInteractive()
       this.devAnswerWordsToggle.disableInteractive()
     }
+  }
+
+  private currentPuzzleSetup(): PuzzleSetup {
+    return {
+      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      useAnswerWordsForRows: this.useAnswerWordsForRows,
+    }
+  }
+
+  private puzzleSatisfiesSetup(setup: PuzzleSetup): boolean {
+    return this.puzzle.rows.every((row) => {
+      if (setup.requireTargetLetterInEachRow && !row.pattern.some((result) => result !== "absent")) return false
+      if (setup.requireGreenTileInEachRow && !row.pattern.some((result) => result === "correct")) return false
+      if (setup.useAnswerWordsForRows && !ANSWER_WORDS.includes(row.intendedGuess)) return false
+      return true
+    })
   }
 
   private updateDevToggle(): void {
