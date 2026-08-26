@@ -31,9 +31,10 @@ export class MainScene extends Phaser.Scene {
   private requireGreenTileInEachRow = false
   private devPanel!: Phaser.GameObjects.Container
   private devOverlay!: Phaser.GameObjects.Rectangle
+  private devPanelBackground!: Phaser.GameObjects.Rectangle
+  private devCloseButton!: Phaser.GameObjects.Text
   private devToggle!: Phaser.GameObjects.Rectangle
   private devGreenToggle!: Phaser.GameObjects.Rectangle
-  private devPanelControls: Phaser.GameObjects.GameObject[] = []
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
   private revealModeButton!: Phaser.GameObjects.Rectangle
@@ -113,16 +114,27 @@ export class MainScene extends Phaser.Scene {
     })
     const note = this.add.text(20, 180, "New puzzles use these settings.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
     this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, note])
-    this.devPanelControls = [this.devOverlay, panel, close, this.devToggle, this.devGreenToggle]
+    this.devPanelBackground = panel
+    this.devCloseButton = close
     this.updateDevToggle()
     this.setDevPanelVisible(false)
   }
 
   private setDevPanelVisible(visible: boolean): void {
     this.devPanel.setVisible(visible)
-    this.devPanelControls.forEach((control) => {
-      if (control.input !== undefined && control.input !== null) control.input.enabled = visible
-    })
+    if (visible) {
+      this.devOverlay.setInteractive()
+      this.devPanelBackground.setInteractive()
+      this.devCloseButton.setInteractive({ useHandCursor: true })
+      this.devToggle.setInteractive({ useHandCursor: true })
+      this.devGreenToggle.setInteractive({ useHandCursor: true })
+    } else {
+      this.devOverlay.disableInteractive()
+      this.devPanelBackground.disableInteractive()
+      this.devCloseButton.disableInteractive()
+      this.devToggle.disableInteractive()
+      this.devGreenToggle.disableInteractive()
+    }
   }
 
   private updateDevToggle(): void {
