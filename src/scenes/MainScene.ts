@@ -1,9 +1,8 @@
 import Phaser from "phaser"
 import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
-import type { ForewordPuzzle } from "../core/puzzle"
+import { createForewordPuzzle, type ForewordPuzzle } from "../core/puzzle"
 import { isAllowedWord } from "../core/words"
-import { createValidatedPuzzle } from "../core/validation"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
 const CELL_SIZE = 52
@@ -33,7 +32,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.puzzle = createValidatedPuzzle()
+    this.puzzle = createForewordPuzzle()
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
     this.add.text(31, 70, "Reassemble the four words from one shared pool.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px" })
     const newPuzzle = this.add.text(398, 35, "NEW PUZZLE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true })
