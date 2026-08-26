@@ -15,6 +15,7 @@ export interface ForewordPuzzle {
 
 export interface PuzzleSetup {
   requireTargetLetterInEachRow?: boolean
+  requireGreenTileInEachRow?: boolean
 }
 
 export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
@@ -22,6 +23,7 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
   const guesses = shuffled(ALLOWED_WORDS, random)
     .filter((word) => word !== target)
     .filter((word) => !setup.requireTargetLetterInEachRow || evaluateGuess(word, target).some((result) => result !== "absent"))
+    .filter((word) => !setup.requireGreenTileInEachRow || evaluateGuess(word, target).some((result) => result === "correct"))
     .slice(0, ROW_COUNT)
 
   if (guesses.length !== ROW_COUNT) {

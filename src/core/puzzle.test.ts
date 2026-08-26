@@ -18,4 +18,11 @@ describe("createForewordPuzzle", () => {
       expect(row.pattern.some((result) => result !== "absent")).toBe(true)
     })
   })
+
+  it("can require every row to have a green tile", () => {
+    const puzzle = createForewordPuzzle(() => 0.25, { requireGreenTileInEachRow: true })
+    puzzle.rows.forEach((row) => {
+      expect(row.pattern.some((result) => result === "correct")).toBe(true)
+    })
+  })
 })
