@@ -16,6 +16,7 @@ interface TileVisual {
 }
 
 interface SceneData extends PuzzleSetup {}
+type InteractionMode = "swap" | "reveal"
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
@@ -29,6 +30,9 @@ export class MainScene extends Phaser.Scene {
   private requireTargetLetterInEachRow = false
   private devPanel!: Phaser.GameObjects.Container
   private devToggle!: Phaser.GameObjects.Rectangle
+  private interactionMode: InteractionMode = "swap"
+  private normalModeButton!: Phaser.GameObjects.Rectangle
+  private revealModeButton!: Phaser.GameObjects.Rectangle
 
   constructor() {
     super("main")
@@ -48,7 +52,32 @@ export class MainScene extends Phaser.Scene {
     this.add.text(31, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
     this.buildBoard()
     this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
+    this.buildInteractionTools()
     this.buildDevPanel()
+  }
+
+  private buildInteractionTools(): void {
+    const normalX = 31
+    const revealX = 182
+    const y = 590
+    this.normalModeButton = this.add.rectangle(normalX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.revealModeButton = this.add.rectangle(revealX, y, 152, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    const normalLabel = this.add.text(normalX + 69, y + 21, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
+    const revealLabel = this.add.text(revealX + 76, y + 21, "REVEAL TOOL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
+    this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
+    this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
+    this.setInteractionMode("swap")
+    normalLabel.setDepth(1)
+    revealLabel.setDepth(1)
+  }
+
+  private setInteractionMode(mode: InteractionMode): void {
+    this.interactionMode = mode
+    this.normalModeButton?.setFillStyle(mode === "swap" ? 0x71845f : 0xc6bdae)
+    this.revealModeButton?.setFillStyle(mode === "reveal" ? 0x71845f : 0xc6bdae)
+    if (this.message !== undefined) {
+      this.message.setText(mode === "swap" ? "Tap two letters to swap them." : "Tap a square to reveal its letter.")
+    }
   }
 
   private buildDevPanel(): void {
@@ -97,6 +126,10 @@ export class MainScene extends Phaser.Scene {
 
   private selectTile(slotIndex: number): void {
     if (this.swapAnimating) return
+    if (this.interactionMode === "reveal") {
+      this.revealTile(slotIndex)
+      return
+    }
     if (this.selectedSlot === undefined) {
       this.selectedSlot = slotIndex
       this.updateSelection()
@@ -122,6 +155,36 @@ export class MainScene extends Phaser.Scene {
     this.animateExchange(first, second, firstSlot, secondSlot)
     this.message.setText("Letters swapped. Keep going.")
     this.updateRowFeedback()
+  }
+
+  private revealTile(slotIndex: number): void {
+    const rowIndex = Math.floor(slotIndex / 5)
+    const columnIndex = slotIndex % 5
+    const row = this.puzzle.rows[rowIndex]
+    const expectedLetter = row?.intendedGuess[columnIndex]
+    const current = this.tileSlots[slotIndex]
+    if (expectedLetter === undefined || current === undefined) return
+    if (current.tile.letter === expectedLetter) {
+      this.message.setText("That letter is already in the right place.")
+      return
+    }
+
+    const sourceSlot = this.tileSlots.findIndex((visual, index) => visual.tile.letter === expectedLetter && index !== slotIndex && !this.isLetterCorrectAtSlot(index))
+    if (sourceSlot < 0) {
+      this.message.setText("I couldn't find that letter to reveal it.")
+      return
+    }
+
+    this.swapTiles(slotIndex, sourceSlot)
+    this.message.setText("Letter revealed. Keep going.")
+  }
+
+  private isLetterCorrectAtSlot(slotIndex: number): boolean {
+    const rowIndex = Math.floor(slotIndex / 5)
+    const columnIndex = slotIndex % 5
+    const row = this.puzzle.rows[rowIndex]
+    const visual = this.tileSlots[slotIndex]
+    return row !== undefined && visual !== undefined && visual.tile.letter === row.intendedGuess[columnIndex]
   }
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
