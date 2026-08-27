@@ -12,6 +12,12 @@ describe("createForewordPuzzle", () => {
     })
   })
 
+  it("gives every row a unique evaluation pattern", () => {
+    const puzzle = createForewordPuzzle(() => 0.25)
+    const signatures = puzzle.rows.map((row) => row.pattern.join(""))
+    expect(new Set(signatures).size).toBe(ROW_COUNT)
+  })
+
   it("can require every row to share a target letter", () => {
     const puzzle = createForewordPuzzle(() => 0.25, { requireTargetLetterInEachRow: true })
     puzzle.rows.forEach((row) => {

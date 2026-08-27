@@ -25,11 +25,23 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
   const wordList = setup.wordListMode === "hard" ? ALLOWED_WORDS : ANSWER_WORDS
   const target = choose(wordList, random)
   const guessWords = useSmallList ? ANSWER_WORDS : ALLOWED_WORDS
-  const guesses = shuffled(guessWords, random)
-    .filter((word) => word !== target)
-    .filter((word) => !setup.requireTargetLetterInEachRow || evaluateGuess(word, target).some((result) => result !== "absent"))
-    .filter((word) => !setup.requireGreenTileInEachRow || evaluateGuess(word, target).some((result) => result === "correct"))
-    .slice(0, ROW_COUNT)
+  const patterns = new Set<string>()
+  const guesses: Array<{ word: string; pattern: LetterResult[] }> = []
+
+  for (const word of shuffled(guessWords, random)) {
+    if (word === target) continue
+
+    const pattern = evaluateGuess(word, target)
+    if (setup.requireTargetLetterInEachRow && !pattern.some((result) => result !== "absent")) continue
+    if (setup.requireGreenTileInEachRow && !pattern.some((result) => result === "correct")) continue
+
+    const signature = pattern.join("")
+    if (patterns.has(signature)) continue
+
+    patterns.add(signature)
+    guesses.push({ word, pattern })
+    if (guesses.length === ROW_COUNT) break
+  }
 
   if (guesses.length !== ROW_COUNT) {
     throw new Error(`Could not create a puzzle with ${ROW_COUNT} rows`)
@@ -37,9 +49,9 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
 
   return {
     target,
-    rows: guesses.map((intendedGuess) => ({
-      intendedGuess,
-      pattern: evaluateGuess(intendedGuess, target),
+    rows: guesses.map(({ word, pattern }) => ({
+      intendedGuess: word,
+      pattern,
     })),
   }
 }
