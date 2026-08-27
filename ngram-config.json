@@ -1,0 +1,8 @@
+{
+  "yearStart": 2000,
+  "yearEnd": 2010,
+  "smoothing": 0,
+  "frequencyMode": "raw_percent",
+  "batchSize": 10,
+  "delaySeconds": 5
+}
