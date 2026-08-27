@@ -17,11 +17,14 @@ export interface PuzzleSetup {
   requireTargetLetterInEachRow?: boolean
   requireGreenTileInEachRow?: boolean
   useAnswerWordsForRows?: boolean
+  wordListMode?: "easy" | "hard"
 }
 
 export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
-  const target = choose(ANSWER_WORDS, random)
-  const guessWords = setup.useAnswerWordsForRows ? ANSWER_WORDS : ALLOWED_WORDS
+  const useSmallList = setup.wordListMode === "easy" || (setup.wordListMode === undefined && setup.useAnswerWordsForRows === true)
+  const wordList = setup.wordListMode === "hard" ? ALLOWED_WORDS : ANSWER_WORDS
+  const target = choose(wordList, random)
+  const guessWords = useSmallList ? ANSWER_WORDS : ALLOWED_WORDS
   const guesses = shuffled(guessWords, random)
     .filter((word) => word !== target)
     .filter((word) => !setup.requireTargetLetterInEachRow || evaluateGuess(word, target).some((result) => result !== "absent"))

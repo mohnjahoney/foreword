@@ -17,6 +17,7 @@ interface TileVisual {
 
 interface SceneData extends PuzzleSetup {}
 type InteractionMode = "swap" | "reveal"
+type WordListMode = "easy" | "hard"
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
@@ -30,14 +31,13 @@ export class MainScene extends Phaser.Scene {
   private swapAnimating = false
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
-  private useAnswerWordsForRows = false
+  private wordListMode: WordListMode = "easy"
   private devPanel!: Phaser.GameObjects.Container
   private devOverlay!: Phaser.GameObjects.Rectangle
   private devPanelBackground!: Phaser.GameObjects.Rectangle
   private devCloseButton!: Phaser.GameObjects.Text
   private devToggle!: Phaser.GameObjects.Rectangle
   private devGreenToggle!: Phaser.GameObjects.Rectangle
-  private devAnswerWordsToggle!: Phaser.GameObjects.Rectangle
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
   private revealModeButton!: Phaser.GameObjects.Rectangle
@@ -56,11 +56,11 @@ export class MainScene extends Phaser.Scene {
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
-    this.useAnswerWordsForRows = data.useAnswerWordsForRows ?? false
+    this.wordListMode = data.wordListMode ?? "easy"
     this.puzzle = createForewordPuzzle(Math.random, {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      useAnswerWordsForRows: this.useAnswerWordsForRows,
+      wordListMode: this.wordListMode,
     })
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
     this.add.text(31, 70, "Reassemble the four words from one shared pool.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px" })
@@ -68,7 +68,7 @@ export class MainScene extends Phaser.Scene {
     newPuzzle.on("pointerdown", () => this.scene.restart({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      useAnswerWordsForRows: this.useAnswerWordsForRows,
+      wordListMode: this.wordListMode,
     }))
     const devButton = this.add.text(398, 66, "DEV", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
     devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
@@ -78,6 +78,7 @@ export class MainScene extends Phaser.Scene {
     this.buildBoard()
     this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
     this.buildInteractionTools()
+    this.buildWordListModeTools()
     this.buildDevPanel()
   }
 
@@ -96,6 +97,35 @@ export class MainScene extends Phaser.Scene {
     revealLabel.setDepth(1)
   }
 
+  private buildWordListModeTools(): void {
+    const y = 650
+    const easyButton = this.add.rectangle(31, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    const hardButton = this.add.rectangle(182, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.add.text(100, y + 21, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.add.text(251, y + 21, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    easyButton.on("pointerdown", () => this.setWordListMode("easy"))
+    hardButton.on("pointerdown", () => this.setWordListMode("hard"))
+    const updateButtons = (): void => {
+      easyButton.setFillStyle(this.wordListMode === "easy" ? 0x71845f : 0xc6bdae)
+      hardButton.setFillStyle(this.wordListMode === "hard" ? 0x71845f : 0xc6bdae)
+    }
+    this.setWordListModeButtons = updateButtons
+    updateButtons()
+  }
+
+  private setWordListModeButtons: (() => void) | undefined
+
+  private setWordListMode(mode: WordListMode): void {
+    if (mode === this.wordListMode) return
+    this.wordListMode = mode
+    this.setWordListModeButtons?.()
+    this.scene.restart({
+      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      wordListMode: this.wordListMode,
+    })
+  }
+
   private setInteractionMode(mode: InteractionMode): void {
     this.interactionMode = mode
     this.normalModeButton?.setFillStyle(mode === "swap" ? 0x71845f : 0xc6bdae)
@@ -109,7 +139,7 @@ export class MainScene extends Phaser.Scene {
     this.devOverlay = this.add.rectangle(0, 0, 430, 760, 0x000000, 0).setOrigin(0, 0).setDepth(49).setInteractive()
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
-    const panel = this.add.rectangle(0, 0, 380, 325, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
+    const panel = this.add.rectangle(0, 0, 380, 265, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1 })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
@@ -125,14 +155,8 @@ export class MainScene extends Phaser.Scene {
       this.requireGreenTileInEachRow = !this.requireGreenTileInEachRow
       this.updateDevToggle()
     })
-    const answerWordsLabel = this.add.text(20, 176, "Draw rows from the smaller answer list", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 } })
-    this.devAnswerWordsToggle = this.add.rectangle(330, 181, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
-    this.devAnswerWordsToggle.on("pointerdown", () => {
-      this.useAnswerWordsForRows = !this.useAnswerWordsForRows
-      this.updateDevToggle()
-    })
-    const note = this.add.text(20, 235, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
-    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, answerWordsLabel, this.devAnswerWordsToggle, note])
+    const note = this.add.text(20, 180, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
@@ -151,14 +175,12 @@ export class MainScene extends Phaser.Scene {
       this.devCloseButton.setInteractive({ useHandCursor: true })
       this.devToggle.setInteractive({ useHandCursor: true })
       this.devGreenToggle.setInteractive({ useHandCursor: true })
-      this.devAnswerWordsToggle.setInteractive({ useHandCursor: true })
     } else {
       this.devOverlay.disableInteractive()
       this.devPanelBackground.disableInteractive()
       this.devCloseButton.disableInteractive()
       this.devToggle.disableInteractive()
       this.devGreenToggle.disableInteractive()
-      this.devAnswerWordsToggle.disableInteractive()
     }
   }
 
@@ -166,7 +188,7 @@ export class MainScene extends Phaser.Scene {
     return {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      useAnswerWordsForRows: this.useAnswerWordsForRows,
+      wordListMode: this.wordListMode,
     }
   }
 
@@ -174,7 +196,7 @@ export class MainScene extends Phaser.Scene {
     return this.puzzle.rows.every((row) => {
       if (setup.requireTargetLetterInEachRow && !row.pattern.some((result) => result !== "absent")) return false
       if (setup.requireGreenTileInEachRow && !row.pattern.some((result) => result === "correct")) return false
-      if (setup.useAnswerWordsForRows && !ANSWER_WORDS.includes(row.intendedGuess)) return false
+      if (setup.wordListMode === "easy" && !ANSWER_WORDS.includes(row.intendedGuess)) return false
       return true
     })
   }
@@ -184,8 +206,6 @@ export class MainScene extends Phaser.Scene {
     this.devToggle.setStrokeStyle(2, this.requireTargetLetterInEachRow ? 0x4c7b43 : 0x756d5e)
     this.devGreenToggle.setFillStyle(this.requireGreenTileInEachRow ? 0x71845f : 0xc6bdae)
     this.devGreenToggle.setStrokeStyle(2, this.requireGreenTileInEachRow ? 0x4c7b43 : 0x756d5e)
-    this.devAnswerWordsToggle.setFillStyle(this.useAnswerWordsForRows ? 0x71845f : 0xc6bdae)
-    this.devAnswerWordsToggle.setStrokeStyle(2, this.useAnswerWordsForRows ? 0x4c7b43 : 0x756d5e)
   }
 
   private buildBoard(): void {
