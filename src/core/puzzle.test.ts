@@ -32,6 +32,20 @@ describe("createForewordPuzzle", () => {
     })
   })
 
+  it("meets minimum total green and yellow tile counts", () => {
+    const puzzle = createForewordPuzzle(() => 0.25, { minGreenTiles: 4, minYellowTiles: 4 })
+    const counts = puzzle.rows.flatMap((row) => row.pattern).reduce(
+      (totals, result) => {
+        if (result === "correct") totals.green += 1
+        if (result === "present") totals.yellow += 1
+        return totals
+      },
+      { green: 0, yellow: 0 },
+    )
+    expect(counts.green).toBeGreaterThanOrEqual(4)
+    expect(counts.yellow).toBeGreaterThanOrEqual(4)
+  })
+
   it("can draw rows from the smaller answer-word list", () => {
     const puzzle = createForewordPuzzle(() => 0.25, { useAnswerWordsForRows: true })
     expect(puzzle.rows).toHaveLength(ROW_COUNT)

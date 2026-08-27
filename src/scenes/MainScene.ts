@@ -2,6 +2,7 @@ import Phaser from "phaser"
 import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
+import { countBoardTiles } from "../core/validation"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
@@ -31,6 +32,8 @@ export class MainScene extends Phaser.Scene {
   private swapAnimating = false
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
+  private minGreenTiles = 4
+  private minYellowTiles = 4
   private wordListMode: WordListMode = "easy"
   private devPanel!: Phaser.GameObjects.Container
   private devOverlay!: Phaser.GameObjects.Rectangle
@@ -38,6 +41,9 @@ export class MainScene extends Phaser.Scene {
   private devCloseButton!: Phaser.GameObjects.Text
   private devToggle!: Phaser.GameObjects.Rectangle
   private devGreenToggle!: Phaser.GameObjects.Rectangle
+  private devGreenCountText!: Phaser.GameObjects.Text
+  private devYellowCountText!: Phaser.GameObjects.Text
+  private devCountButtons: Phaser.GameObjects.Text[] = []
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
   private revealModeButton!: Phaser.GameObjects.Rectangle
@@ -56,10 +62,14 @@ export class MainScene extends Phaser.Scene {
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
+    this.minGreenTiles = data.minGreenTiles ?? 4
+    this.minYellowTiles = data.minYellowTiles ?? 4
     this.wordListMode = data.wordListMode ?? "easy"
     this.puzzle = createForewordPuzzle(Math.random, {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      minGreenTiles: this.minGreenTiles,
+      minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
     })
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
@@ -68,6 +78,8 @@ export class MainScene extends Phaser.Scene {
     newPuzzle.on("pointerdown", () => this.scene.restart({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      minGreenTiles: this.minGreenTiles,
+      minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
     }))
     const devButton = this.add.text(398, 66, "DEV", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
@@ -122,6 +134,8 @@ export class MainScene extends Phaser.Scene {
     this.scene.restart({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      minGreenTiles: this.minGreenTiles,
+      minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
     })
   }
@@ -139,7 +153,7 @@ export class MainScene extends Phaser.Scene {
     this.devOverlay = this.add.rectangle(0, 0, 430, 760, 0x000000, 0).setOrigin(0, 0).setDepth(49).setInteractive()
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
-    const panel = this.add.rectangle(0, 0, 380, 265, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
+    const panel = this.add.rectangle(0, 0, 380, 335, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1 })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
@@ -155,12 +169,39 @@ export class MainScene extends Phaser.Scene {
       this.requireGreenTileInEachRow = !this.requireGreenTileInEachRow
       this.updateDevToggle()
     })
-    const note = this.add.text(20, 180, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
-    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, note])
+    const greenCountLabel = this.add.text(20, 180, "Minimum total green tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
+    const yellowCountLabel = this.add.text(20, 235, "Minimum total yellow tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
+    this.devGreenCountText = this.add.text(310, 180, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(0.5)
+    this.devYellowCountText = this.add.text(310, 235, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(0.5)
+    const greenMinus = this.add.text(270, 180, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const greenPlus = this.add.text(350, 180, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const yellowMinus = this.add.text(270, 235, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const yellowPlus = this.add.text(350, 235, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    this.devCountButtons = [greenMinus, greenPlus, yellowMinus, yellowPlus]
+    greenMinus.on("pointerdown", () => this.adjustTileMinimum("green", -1))
+    greenPlus.on("pointerdown", () => this.adjustTileMinimum("green", 1))
+    yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
+    yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
+    const note = this.add.text(20, 285, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
+    this.updateTileMinimumText()
     this.setDevPanelVisible(false)
+  }
+
+  private adjustTileMinimum(color: "green" | "yellow", amount: number): void {
+    const current = color === "green" ? this.minGreenTiles : this.minYellowTiles
+    const next = Math.max(0, Math.min(20, current + amount))
+    if (color === "green") this.minGreenTiles = next
+    else this.minYellowTiles = next
+    this.updateTileMinimumText()
+  }
+
+  private updateTileMinimumText(): void {
+    this.devGreenCountText?.setText(String(this.minGreenTiles))
+    this.devYellowCountText?.setText(String(this.minYellowTiles))
   }
 
   private setDevPanelVisible(visible: boolean): void {
@@ -175,12 +216,14 @@ export class MainScene extends Phaser.Scene {
       this.devCloseButton.setInteractive({ useHandCursor: true })
       this.devToggle.setInteractive({ useHandCursor: true })
       this.devGreenToggle.setInteractive({ useHandCursor: true })
+      this.devCountButtons.forEach((button) => button.setInteractive({ useHandCursor: true }))
     } else {
       this.devOverlay.disableInteractive()
       this.devPanelBackground.disableInteractive()
       this.devCloseButton.disableInteractive()
       this.devToggle.disableInteractive()
       this.devGreenToggle.disableInteractive()
+      this.devCountButtons.forEach((button) => button.disableInteractive())
     }
   }
 
@@ -188,6 +231,8 @@ export class MainScene extends Phaser.Scene {
     return {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      minGreenTiles: this.minGreenTiles,
+      minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
     }
   }
@@ -198,7 +243,10 @@ export class MainScene extends Phaser.Scene {
       if (setup.requireGreenTileInEachRow && !row.pattern.some((result) => result === "correct")) return false
       if (setup.wordListMode === "easy" && !ANSWER_WORDS.includes(row.intendedGuess)) return false
       return true
-    })
+    }) && (() => {
+      const counts = countBoardTiles(this.puzzle)
+      return counts.green >= (setup.minGreenTiles ?? 0) && counts.yellow >= (setup.minYellowTiles ?? 0)
+    })()
   }
 
   private updateDevToggle(): void {
