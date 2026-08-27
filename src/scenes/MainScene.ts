@@ -62,8 +62,8 @@ export class MainScene extends Phaser.Scene {
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
-    this.minGreenTiles = data.minGreenTiles ?? 4
-    this.minYellowTiles = data.minYellowTiles ?? 4
+    this.minGreenTiles = clampTileMinimum(data.minGreenTiles ?? 4)
+    this.minYellowTiles = clampTileMinimum(data.minYellowTiles ?? 4)
     this.wordListMode = data.wordListMode ?? "easy"
     this.puzzle = createForewordPuzzle(Math.random, {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
@@ -193,7 +193,7 @@ export class MainScene extends Phaser.Scene {
 
   private adjustTileMinimum(color: "green" | "yellow", amount: number): void {
     const current = color === "green" ? this.minGreenTiles : this.minYellowTiles
-    const next = Math.max(0, Math.min(20, current + amount))
+    const next = clampTileMinimum(current + amount)
     if (color === "green") this.minGreenTiles = next
     else this.minYellowTiles = next
     this.updateTileMinimumText()
@@ -449,4 +449,8 @@ function patternsMatch(
   expected: ForewordPuzzle["rows"][number]["pattern"],
 ): boolean {
   return actual.every((result, index) => result === expected[index])
+}
+
+function clampTileMinimum(value: number): number {
+  return Math.max(0, Math.min(6, Math.round(value)))
 }
