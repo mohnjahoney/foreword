@@ -3,7 +3,7 @@ import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
-import { findNextSwap } from "../core/minimumMoves"
+import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
@@ -31,6 +31,10 @@ export class MainScene extends Phaser.Scene {
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private swapDirection = 1
   private swapAnimating = false
+  private movesTaken = 0
+  private minimumMoves = 0
+  private movesTakenText!: Phaser.GameObjects.Text
+  private minimumMovesText!: Phaser.GameObjects.Text
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
   private minGreenTiles = 4
@@ -60,6 +64,8 @@ export class MainScene extends Phaser.Scene {
     this.rowOutlines = []
     this.selectedSlot = undefined
     this.swapAnimating = false
+    this.movesTaken = 0
+    this.minimumMoves = 0
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
@@ -89,10 +95,24 @@ export class MainScene extends Phaser.Scene {
     this.add.text(31, 112, "TARGET", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", letterSpacing: 2 })
     this.add.text(31, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
     this.buildBoard()
+    this.buildMoveInfo()
     this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
     this.buildInteractionTools()
     this.buildWordListModeTools()
     this.buildDevPanel()
+  }
+
+  private buildMoveInfo(): void {
+    this.add.text(330, 108, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.add.text(330, 125, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.movesTakenText = this.add.text(398, 108, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.minimumMovesText = this.add.text(398, 125, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.updateMoveInfo()
+  }
+
+  private updateMoveInfo(): void {
+    this.movesTakenText?.setText(String(this.movesTaken))
+    this.minimumMovesText?.setText(String(this.minimumMoves))
   }
 
   private buildInteractionTools(): void {
@@ -275,6 +295,7 @@ export class MainScene extends Phaser.Scene {
 
   private buildBoard(): void {
     const board = createScrambledBoard(this.puzzle)
+    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     this.puzzle.rows.forEach((row, rowIndex) => {
       const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
       this.add.text(31, y + 14, `${rowIndex + 1}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold" })
@@ -324,6 +345,8 @@ export class MainScene extends Phaser.Scene {
     if (first === undefined || second === undefined) return
     this.tileSlots[firstSlot] = second
     this.tileSlots[secondSlot] = first
+    this.movesTaken += 1
+    this.updateMoveInfo()
     this.animateExchange(first, second, firstSlot, secondSlot)
     this.message.setText("Letters swapped. Keep going.")
     this.updateRowFeedback()
