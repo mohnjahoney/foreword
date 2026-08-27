@@ -14,22 +14,41 @@ All words below appear in the current combined word list (`ALLOWED_WORDS`).
 
 ## Familiar
 
+- guava
 - aorta
 - aroma
 - quark
 - sushi
 - fjord
+- again
+- every
+- first
+- great
+- never
+- place
+- right
+- small
+- still
+- think
+- water
+- world
+- adorn
+- brawn
+- guise
+- plaid
+- stilt
 
 ## Uncommon
 
 - banal
 - cairn
-- cavil
-- guava
-- nacre
+- mirth
+- chasm
 
 ## Obscure
 
+- cavil
+- nacre
 - bovid
 - eclat
 - osier
