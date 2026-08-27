@@ -3,6 +3,7 @@ import { createScrambledBoard, type LetterTile } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
+import { findNextSwap } from "../core/minimumMoves"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
@@ -97,16 +98,32 @@ export class MainScene extends Phaser.Scene {
   private buildInteractionTools(): void {
     const normalX = 31
     const revealX = 182
+    const nextX = 342
     const y = 590
     this.normalModeButton = this.add.rectangle(normalX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
     this.revealModeButton = this.add.rectangle(revealX, y, 152, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    const nextSwapButton = this.add.rectangle(nextX, y, 72, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
     const normalLabel = this.add.text(normalX + 69, y + 21, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
     const revealLabel = this.add.text(revealX + 76, y + 21, "REVEAL TOOL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
+    const nextSwapLabel = this.add.text(nextX + 36, y + 21, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
     this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
     this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
+    nextSwapButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
     this.setInteractionMode("swap")
     normalLabel.setDepth(1)
     revealLabel.setDepth(1)
+    nextSwapLabel.setDepth(1)
+  }
+
+  private performNextAlgorithmicSwap(): void {
+    if (this.swapAnimating) return
+    const next = findNextSwap(this.puzzle, this.tileSlots.map((visual) => visual.tile))
+    if (next === undefined) {
+      this.message.setText("The board is solved.")
+      return
+    }
+    this.swapTiles(next.firstSlot, next.secondSlot)
+    this.message.setText(`Suggested swap: ${next.improvement === 2 ? "two tiles" : "one tile"} correct.`)
   }
 
   private buildWordListModeTools(): void {
