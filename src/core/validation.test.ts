@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { assessPuzzle } from "./validation"
+import { assessPuzzle, countBoardTiles } from "./validation"
 import { type ForewordPuzzle } from "./puzzle"
 
 describe("assessPuzzle", () => {
@@ -18,5 +18,19 @@ describe("assessPuzzle", () => {
       solutionCount: 1,
       acceptable: true,
     })
+  })
+})
+
+describe("countBoardTiles", () => {
+  it("counts green and yellow tiles across the whole board", () => {
+    const puzzle: ForewordPuzzle = {
+      target: "CRANE",
+      rows: [
+        { intendedGuess: "SLATE", pattern: ["absent", "present", "correct", "absent", "correct"] },
+        { intendedGuess: "MOUND", pattern: ["present", "absent", "absent", "correct", "absent"] },
+      ],
+    }
+
+    expect(countBoardTiles(puzzle)).toEqual({ green: 3, yellow: 2 })
   })
 })
