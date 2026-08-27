@@ -13,8 +13,9 @@ with open(input_path, encoding="utf-8") as file:
     data = json.load(file)
 
 means = np.array([
-    np.mean([frequency for frequency in word["frequencies"].values() if frequency is not None])
+    np.mean(frequencies)
     for word in data["words"]
+    if (frequencies := [frequency for frequency in word["frequencies"].values() if frequency is not None])
 ])
 bins = np.logspace(np.log10(means.min()), np.log10(means.max()), 18)
 
@@ -23,8 +24,8 @@ axis.hist(means, bins=bins, color="#71845f", edgecolor="#f3eedf", linewidth=1.2)
 axis.set_xscale("log")
 axis.set_xlabel("Mean normalized frequency (%) — logarithmic scale")
 axis.set_ylabel("Number of words")
-axis.set_title("Google Ngram frequency distribution for the first 100 allowed words")
+axis.set_title(f"Google Ngram frequency distribution for {len(means)} words with Ngram data")
 axis.grid(axis="y", color="#d8d2c4", linewidth=0.8)
 fig.tight_layout()
 fig.savefig(output_path, dpi=180)
-print(f"Wrote histogram for {len(means)} words to {output_path}")
+print(f"Wrote histogram for {len(means)} words with Ngram data to {output_path}")

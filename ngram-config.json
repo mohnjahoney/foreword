@@ -4,5 +4,9 @@
   "smoothing": 0,
   "frequencyMode": "raw_percent",
   "batchSize": 10,
-  "delaySeconds": 5
+  "delaySeconds": 0.5,
+  "wordSource": "ALLOWED_WORDS",
+  "sampleSize": 1000,
+  "randomSample": true,
+  "outputStem": "allowed-words-ngram"
 }

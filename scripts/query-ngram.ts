@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
-import { basename, dirname, extname, join, resolve } from "node:path"
+import { join, resolve } from "node:path"
 
 interface NgramConfig {
   yearStart: number
@@ -8,6 +8,10 @@ interface NgramConfig {
   frequencyMode: "raw_percent"
   batchSize: number
   delaySeconds: number
+  wordSource: "ALLOWED_WORDS"
+  sampleSize: number
+  randomSample: boolean
+  outputStem: string
 }
 
 interface NgramResponse {
@@ -17,13 +21,14 @@ interface NgramResponse {
 
 const projectRoot = resolve(import.meta.dirname, "..")
 const configPath = join(projectRoot, "ngram-config.json")
-const inputPath = join(projectRoot, "docs", "first-100-allowed-words.md")
 const config = JSON.parse(readFileSync(configPath, "utf8")) as NgramConfig
-const words = readFileSync(inputPath, "utf8")
-  .split("\n")
-  .flatMap((line) => /^\d+\.\s+([a-z]+)$/.exec(line)?.[1] ?? [])
+const answerWords = JSON.parse(readFileSync(join(projectRoot, "src/core/wordlists/nytAnswers.json"), "utf8")) as string[]
+const additionalGuesses = JSON.parse(readFileSync(join(projectRoot, "src/core/wordlists/nytAdditionalGuesses.json"), "utf8")) as string[]
+const sourceWords = [...answerWords, ...additionalGuesses].map((word) => word.toLowerCase())
+const words = config.randomSample ? shuffled(sourceWords).slice(0, config.sampleSize) : sourceWords.slice(0, config.sampleSize)
 
-if (words.length === 0) throw new Error(`No numbered words found in ${inputPath}`)
+if (words.length === 0) throw new Error("No words selected for the Ngram experiment")
+if (config.sampleSize > sourceWords.length) throw new Error(`Requested ${config.sampleSize} words, but the source only contains ${sourceWords.length}`)
 if (config.frequencyMode !== "raw_percent") throw new Error("This script expects frequencyMode=raw_percent")
 
 const years = Array.from({ length: config.yearEnd - config.yearStart + 1 }, (_, index) => config.yearStart + index)
@@ -50,13 +55,23 @@ const output = words.map((word) => ({
   word,
   frequencies: Object.fromEntries(years.map((year, index) => [year, results.get(word)?.[index] ?? null])),
 }))
-const inputDirectory = dirname(inputPath)
-const inputStem = basename(inputPath, extname(inputPath))
-const baseOutputPath = join(inputDirectory, `${inputStem}-ngram.json`)
+const outputDirectory = join(projectRoot, "docs")
+const baseOutputPath = join(outputDirectory, `${config.outputStem}.json`)
 const outputPath = chooseOutputPath(baseOutputPath)
 
-writeFileSync(outputPath, `${JSON.stringify({ config, corpus: "en-2019", source: basename(inputPath), words: output }, null, 2)}\n`)
+writeFileSync(outputPath, `${JSON.stringify({ config, corpus: "en-2019", source: config.wordSource, words: output }, null, 2)}\n`)
 console.log(`Wrote ${output.length} words to ${outputPath}`)
+
+function shuffled(items: string[]): string[] {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = result[index]
+    result[index] = result[swapIndex] as string
+    result[swapIndex] = current as string
+  }
+  return result
+}
 
 function chooseOutputPath(basePath: string): string {
   if (!existsSync(basePath)) return basePath
