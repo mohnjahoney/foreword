@@ -7,6 +7,7 @@
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
+    "experiment:ngram": "node --experimental-strip-types scripts/query-ngram.ts",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build"
   },
