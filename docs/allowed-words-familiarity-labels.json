@@ -1,0 +1,4006 @@
+{
+  "source": "allowed-words-ngram.json",
+  "method": "blind subjective annotation",
+  "labels": [
+    {
+      "word": "grief",
+      "category": "unusual"
+    },
+    {
+      "word": "mages",
+      "category": "familiar"
+    },
+    {
+      "word": "elvan",
+      "category": "unusual"
+    },
+    {
+      "word": "besti",
+      "category": "unusual"
+    },
+    {
+      "word": "talky",
+      "category": "unusual"
+    },
+    {
+      "word": "pores",
+      "category": "unusual"
+    },
+    {
+      "word": "bluff",
+      "category": "common"
+    },
+    {
+      "word": "slaty",
+      "category": "unusual"
+    },
+    {
+      "word": "bundt",
+      "category": "unusual"
+    },
+    {
+      "word": "scrob",
+      "category": "obscure"
+    },
+    {
+      "word": "prims",
+      "category": "obscure"
+    },
+    {
+      "word": "habus",
+      "category": "obscure"
+    },
+    {
+      "word": "reist",
+      "category": "obscure"
+    },
+    {
+      "word": "mohua",
+      "category": "obscure"
+    },
+    {
+      "word": "caaed",
+      "category": "unusual"
+    },
+    {
+      "word": "texts",
+      "category": "unusual"
+    },
+    {
+      "word": "dunts",
+      "category": "obscure"
+    },
+    {
+      "word": "raths",
+      "category": "obscure"
+    },
+    {
+      "word": "podia",
+      "category": "obscure"
+    },
+    {
+      "word": "fribs",
+      "category": "obscure"
+    },
+    {
+      "word": "zonae",
+      "category": "obscure"
+    },
+    {
+      "word": "zigan",
+      "category": "obscure"
+    },
+    {
+      "word": "orant",
+      "category": "obscure"
+    },
+    {
+      "word": "deets",
+      "category": "unusual"
+    },
+    {
+      "word": "kevel",
+      "category": "obscure"
+    },
+    {
+      "word": "toffy",
+      "category": "obscure"
+    },
+    {
+      "word": "yites",
+      "category": "obscure"
+    },
+    {
+      "word": "dyads",
+      "category": "unusual"
+    },
+    {
+      "word": "racon",
+      "category": "unusual"
+    },
+    {
+      "word": "laund",
+      "category": "obscure"
+    },
+    {
+      "word": "dross",
+      "category": "familiar"
+    },
+    {
+      "word": "clint",
+      "category": "unusual"
+    },
+    {
+      "word": "sucks",
+      "category": "unusual"
+    },
+    {
+      "word": "palla",
+      "category": "unusual"
+    },
+    {
+      "word": "gnarr",
+      "category": "unusual"
+    },
+    {
+      "word": "sucky",
+      "category": "unusual"
+    },
+    {
+      "word": "reeds",
+      "category": "unusual"
+    },
+    {
+      "word": "artel",
+      "category": "obscure"
+    },
+    {
+      "word": "bevvy",
+      "category": "unusual"
+    },
+    {
+      "word": "stash",
+      "category": "familiar"
+    },
+    {
+      "word": "biles",
+      "category": "unusual"
+    },
+    {
+      "word": "strop",
+      "category": "obscure"
+    },
+    {
+      "word": "yippy",
+      "category": "unusual"
+    },
+    {
+      "word": "torse",
+      "category": "obscure"
+    },
+    {
+      "word": "kutus",
+      "category": "obscure"
+    },
+    {
+      "word": "spars",
+      "category": "unusual"
+    },
+    {
+      "word": "welts",
+      "category": "unusual"
+    },
+    {
+      "word": "soaps",
+      "category": "unusual"
+    },
+    {
+      "word": "wryly",
+      "category": "unusual"
+    },
+    {
+      "word": "vegie",
+      "category": "unusual"
+    },
+    {
+      "word": "takas",
+      "category": "unusual"
+    },
+    {
+      "word": "welkt",
+      "category": "obscure"
+    },
+    {
+      "word": "erect",
+      "category": "familiar"
+    },
+    {
+      "word": "cajun",
+      "category": "familiar"
+    },
+    {
+      "word": "bunny",
+      "category": "common"
+    },
+    {
+      "word": "sixes",
+      "category": "unusual"
+    },
+    {
+      "word": "abler",
+      "category": "unusual"
+    },
+    {
+      "word": "merer",
+      "category": "unusual"
+    },
+    {
+      "word": "goofy",
+      "category": "familiar"
+    },
+    {
+      "word": "yucas",
+      "category": "obscure"
+    },
+    {
+      "word": "pelma",
+      "category": "obscure"
+    },
+    {
+      "word": "logon",
+      "category": "unusual"
+    },
+    {
+      "word": "tarot",
+      "category": "familiar"
+    },
+    {
+      "word": "bortz",
+      "category": "obscure"
+    },
+    {
+      "word": "toxic",
+      "category": "familiar"
+    },
+    {
+      "word": "candy",
+      "category": "common"
+    },
+    {
+      "word": "rower",
+      "category": "familiar"
+    },
+    {
+      "word": "huias",
+      "category": "obscure"
+    },
+    {
+      "word": "ratos",
+      "category": "obscure"
+    },
+    {
+      "word": "zakat",
+      "category": "unusual"
+    },
+    {
+      "word": "ratha",
+      "category": "obscure"
+    },
+    {
+      "word": "pocky",
+      "category": "obscure"
+    },
+    {
+      "word": "admin",
+      "category": "unusual"
+    },
+    {
+      "word": "jaded",
+      "category": "familiar"
+    },
+    {
+      "word": "gummy",
+      "category": "common"
+    },
+    {
+      "word": "outre",
+      "category": "unusual"
+    },
+    {
+      "word": "dules",
+      "category": "obscure"
+    },
+    {
+      "word": "cists",
+      "category": "obscure"
+    },
+    {
+      "word": "traik",
+      "category": "unusual"
+    },
+    {
+      "word": "frorn",
+      "category": "obscure"
+    },
+    {
+      "word": "vitas",
+      "category": "unusual"
+    },
+    {
+      "word": "alaap",
+      "category": "obscure"
+    },
+    {
+      "word": "arked",
+      "category": "unusual"
+    },
+    {
+      "word": "shlub",
+      "category": "obscure"
+    },
+    {
+      "word": "cedar",
+      "category": "familiar"
+    },
+    {
+      "word": "glair",
+      "category": "familiar"
+    },
+    {
+      "word": "renig",
+      "category": "unusual"
+    },
+    {
+      "word": "selva",
+      "category": "unusual"
+    },
+    {
+      "word": "erupt",
+      "category": "familiar"
+    },
+    {
+      "word": "herma",
+      "category": "obscure"
+    },
+    {
+      "word": "mousy",
+      "category": "familiar"
+    },
+    {
+      "word": "vivas",
+      "category": "unusual"
+    },
+    {
+      "word": "algin",
+      "category": "obscure"
+    },
+    {
+      "word": "cools",
+      "category": "unusual"
+    },
+    {
+      "word": "genii",
+      "category": "unusual"
+    },
+    {
+      "word": "naiks",
+      "category": "obscure"
+    },
+    {
+      "word": "hyphy",
+      "category": "unusual"
+    },
+    {
+      "word": "billy",
+      "category": "unusual"
+    },
+    {
+      "word": "lezzy",
+      "category": "unusual"
+    },
+    {
+      "word": "usage",
+      "category": "familiar"
+    },
+    {
+      "word": "throb",
+      "category": "familiar"
+    },
+    {
+      "word": "virls",
+      "category": "obscure"
+    },
+    {
+      "word": "nards",
+      "category": "obscure"
+    },
+    {
+      "word": "scrab",
+      "category": "obscure"
+    },
+    {
+      "word": "araks",
+      "category": "obscure"
+    },
+    {
+      "word": "divna",
+      "category": "unusual"
+    },
+    {
+      "word": "voile",
+      "category": "familiar"
+    },
+    {
+      "word": "tichy",
+      "category": "unusual"
+    },
+    {
+      "word": "duddy",
+      "category": "unusual"
+    },
+    {
+      "word": "bardy",
+      "category": "unusual"
+    },
+    {
+      "word": "shope",
+      "category": "unusual"
+    },
+    {
+      "word": "seame",
+      "category": "obscure"
+    },
+    {
+      "word": "pulus",
+      "category": "unusual"
+    },
+    {
+      "word": "sands",
+      "category": "unusual"
+    },
+    {
+      "word": "mudir",
+      "category": "obscure"
+    },
+    {
+      "word": "pokey",
+      "category": "unusual"
+    },
+    {
+      "word": "copsy",
+      "category": "unusual"
+    },
+    {
+      "word": "bazoo",
+      "category": "unusual"
+    },
+    {
+      "word": "houff",
+      "category": "obscure"
+    },
+    {
+      "word": "miaou",
+      "category": "unusual"
+    },
+    {
+      "word": "herns",
+      "category": "unusual"
+    },
+    {
+      "word": "blude",
+      "category": "obscure"
+    },
+    {
+      "word": "saros",
+      "category": "obscure"
+    },
+    {
+      "word": "fries",
+      "category": "unusual"
+    },
+    {
+      "word": "scarf",
+      "category": "familiar"
+    },
+    {
+      "word": "weals",
+      "category": "obscure"
+    },
+    {
+      "word": "chuse",
+      "category": "obscure"
+    },
+    {
+      "word": "caped",
+      "category": "unusual"
+    },
+    {
+      "word": "pendu",
+      "category": "obscure"
+    },
+    {
+      "word": "nowls",
+      "category": "obscure"
+    },
+    {
+      "word": "bezzy",
+      "category": "obscure"
+    },
+    {
+      "word": "kufis",
+      "category": "unusual"
+    },
+    {
+      "word": "denar",
+      "category": "unusual"
+    },
+    {
+      "word": "betid",
+      "category": "obscure"
+    },
+    {
+      "word": "lodes",
+      "category": "unusual"
+    },
+    {
+      "word": "blear",
+      "category": "unusual"
+    },
+    {
+      "word": "cadee",
+      "category": "obscure"
+    },
+    {
+      "word": "pical",
+      "category": "obscure"
+    },
+    {
+      "word": "bored",
+      "category": "common"
+    },
+    {
+      "word": "tragi",
+      "category": "unusual"
+    },
+    {
+      "word": "derns",
+      "category": "unusual"
+    },
+    {
+      "word": "spues",
+      "category": "unusual"
+    },
+    {
+      "word": "farad",
+      "category": "obscure"
+    },
+    {
+      "word": "musca",
+      "category": "obscure"
+    },
+    {
+      "word": "gaunt",
+      "category": "familiar"
+    },
+    {
+      "word": "rowth",
+      "category": "unusual"
+    },
+    {
+      "word": "diode",
+      "category": "unusual"
+    },
+    {
+      "word": "cuits",
+      "category": "unusual"
+    },
+    {
+      "word": "shags",
+      "category": "unusual"
+    },
+    {
+      "word": "circs",
+      "category": "obscure"
+    },
+    {
+      "word": "panax",
+      "category": "obscure"
+    },
+    {
+      "word": "maces",
+      "category": "unusual"
+    },
+    {
+      "word": "blind",
+      "category": "unusual"
+    },
+    {
+      "word": "satay",
+      "category": "familiar"
+    },
+    {
+      "word": "shirt",
+      "category": "familiar"
+    },
+    {
+      "word": "thang",
+      "category": "unusual"
+    },
+    {
+      "word": "lipos",
+      "category": "unusual"
+    },
+    {
+      "word": "greys",
+      "category": "unusual"
+    },
+    {
+      "word": "vault",
+      "category": "familiar"
+    },
+    {
+      "word": "cages",
+      "category": "unusual"
+    },
+    {
+      "word": "suety",
+      "category": "obscure"
+    },
+    {
+      "word": "sherd",
+      "category": "unusual"
+    },
+    {
+      "word": "drats",
+      "category": "unusual"
+    },
+    {
+      "word": "hards",
+      "category": "unusual"
+    },
+    {
+      "word": "afoot",
+      "category": "familiar"
+    },
+    {
+      "word": "krays",
+      "category": "obscure"
+    },
+    {
+      "word": "blite",
+      "category": "obscure"
+    },
+    {
+      "word": "shrug",
+      "category": "unusual"
+    },
+    {
+      "word": "lucid",
+      "category": "familiar"
+    },
+    {
+      "word": "iambi",
+      "category": "obscure"
+    },
+    {
+      "word": "topis",
+      "category": "unusual"
+    },
+    {
+      "word": "least",
+      "category": "familiar"
+    },
+    {
+      "word": "lings",
+      "category": "unusual"
+    },
+    {
+      "word": "mixed",
+      "category": "unusual"
+    },
+    {
+      "word": "volta",
+      "category": "unusual"
+    },
+    {
+      "word": "namer",
+      "category": "unusual"
+    },
+    {
+      "word": "leers",
+      "category": "unusual"
+    },
+    {
+      "word": "ombus",
+      "category": "obscure"
+    },
+    {
+      "word": "rifle",
+      "category": "familiar"
+    },
+    {
+      "word": "bayou",
+      "category": "familiar"
+    },
+    {
+      "word": "tolus",
+      "category": "unusual"
+    },
+    {
+      "word": "urges",
+      "category": "unusual"
+    },
+    {
+      "word": "marts",
+      "category": "unusual"
+    },
+    {
+      "word": "robin",
+      "category": "familiar"
+    },
+    {
+      "word": "guess",
+      "category": "common"
+    },
+    {
+      "word": "maggs",
+      "category": "obscure"
+    },
+    {
+      "word": "yapps",
+      "category": "unusual"
+    },
+    {
+      "word": "cored",
+      "category": "unusual"
+    },
+    {
+      "word": "tweep",
+      "category": "unusual"
+    },
+    {
+      "word": "refed",
+      "category": "unusual"
+    },
+    {
+      "word": "yirth",
+      "category": "obscure"
+    },
+    {
+      "word": "samas",
+      "category": "obscure"
+    },
+    {
+      "word": "quare",
+      "category": "obscure"
+    },
+    {
+      "word": "dewed",
+      "category": "unusual"
+    },
+    {
+      "word": "nanas",
+      "category": "unusual"
+    },
+    {
+      "word": "choli",
+      "category": "obscure"
+    },
+    {
+      "word": "wight",
+      "category": "obscure"
+    },
+    {
+      "word": "ileac",
+      "category": "obscure"
+    },
+    {
+      "word": "codes",
+      "category": "unusual"
+    },
+    {
+      "word": "nasal",
+      "category": "familiar"
+    },
+    {
+      "word": "scoop",
+      "category": "familiar"
+    },
+    {
+      "word": "loams",
+      "category": "familiar"
+    },
+    {
+      "word": "inarm",
+      "category": "obscure"
+    },
+    {
+      "word": "vardy",
+      "category": "unusual"
+    },
+    {
+      "word": "zests",
+      "category": "unusual"
+    },
+    {
+      "word": "grues",
+      "category": "unusual"
+    },
+    {
+      "word": "gloss",
+      "category": "unusual"
+    },
+    {
+      "word": "aphis",
+      "category": "obscure"
+    },
+    {
+      "word": "psion",
+      "category": "obscure"
+    },
+    {
+      "word": "riems",
+      "category": "obscure"
+    },
+    {
+      "word": "dozer",
+      "category": "unusual"
+    },
+    {
+      "word": "there",
+      "category": "unusual"
+    },
+    {
+      "word": "talls",
+      "category": "unusual"
+    },
+    {
+      "word": "gluon",
+      "category": "unusual"
+    },
+    {
+      "word": "peony",
+      "category": "familiar"
+    },
+    {
+      "word": "airts",
+      "category": "obscure"
+    },
+    {
+      "word": "refry",
+      "category": "unusual"
+    },
+    {
+      "word": "lubes",
+      "category": "unusual"
+    },
+    {
+      "word": "clone",
+      "category": "common"
+    },
+    {
+      "word": "blawn",
+      "category": "obscure"
+    },
+    {
+      "word": "dumps",
+      "category": "unusual"
+    },
+    {
+      "word": "bluds",
+      "category": "unusual"
+    },
+    {
+      "word": "locks",
+      "category": "unusual"
+    },
+    {
+      "word": "seine",
+      "category": "unusual"
+    },
+    {
+      "word": "culti",
+      "category": "obscure"
+    },
+    {
+      "word": "fever",
+      "category": "common"
+    },
+    {
+      "word": "gleys",
+      "category": "unusual"
+    },
+    {
+      "word": "delft",
+      "category": "unusual"
+    },
+    {
+      "word": "camas",
+      "category": "unusual"
+    },
+    {
+      "word": "skivy",
+      "category": "unusual"
+    },
+    {
+      "word": "tunds",
+      "category": "unusual"
+    },
+    {
+      "word": "jumbo",
+      "category": "familiar"
+    },
+    {
+      "word": "three",
+      "category": "unusual"
+    },
+    {
+      "word": "moder",
+      "category": "unusual"
+    },
+    {
+      "word": "bonne",
+      "category": "unusual"
+    },
+    {
+      "word": "cromb",
+      "category": "unusual"
+    },
+    {
+      "word": "loony",
+      "category": "familiar"
+    },
+    {
+      "word": "routh",
+      "category": "obscure"
+    },
+    {
+      "word": "slobs",
+      "category": "unusual"
+    },
+    {
+      "word": "doums",
+      "category": "unusual"
+    },
+    {
+      "word": "glory",
+      "category": "common"
+    },
+    {
+      "word": "abort",
+      "category": "common"
+    },
+    {
+      "word": "chess",
+      "category": "common"
+    },
+    {
+      "word": "harem",
+      "category": "common"
+    },
+    {
+      "word": "butes",
+      "category": "obscure"
+    },
+    {
+      "word": "joker",
+      "category": "familiar"
+    },
+    {
+      "word": "spait",
+      "category": "obscure"
+    },
+    {
+      "word": "stong",
+      "category": "unusual"
+    },
+    {
+      "word": "forby",
+      "category": "unusual"
+    },
+    {
+      "word": "reave",
+      "category": "unusual"
+    },
+    {
+      "word": "croak",
+      "category": "familiar"
+    },
+    {
+      "word": "click",
+      "category": "common"
+    },
+    {
+      "word": "sonic",
+      "category": "familiar"
+    },
+    {
+      "word": "tynes",
+      "category": "unusual"
+    },
+    {
+      "word": "blabs",
+      "category": "unusual"
+    },
+    {
+      "word": "tizes",
+      "category": "unusual"
+    },
+    {
+      "word": "drear",
+      "category": "unusual"
+    },
+    {
+      "word": "pseud",
+      "category": "unusual"
+    },
+    {
+      "word": "tajes",
+      "category": "obscure"
+    },
+    {
+      "word": "elute",
+      "category": "familiar"
+    },
+    {
+      "word": "seiza",
+      "category": "obscure"
+    },
+    {
+      "word": "biers",
+      "category": "unusual"
+    },
+    {
+      "word": "gosht",
+      "category": "unusual"
+    },
+    {
+      "word": "groma",
+      "category": "obscure"
+    },
+    {
+      "word": "trogs",
+      "category": "unusual"
+    },
+    {
+      "word": "reuse",
+      "category": "unusual"
+    },
+    {
+      "word": "media",
+      "category": "familiar"
+    },
+    {
+      "word": "stiff",
+      "category": "unusual"
+    },
+    {
+      "word": "takky",
+      "category": "unusual"
+    },
+    {
+      "word": "yowed",
+      "category": "obscure"
+    },
+    {
+      "word": "rivet",
+      "category": "unusual"
+    },
+    {
+      "word": "aahed",
+      "category": "obscure"
+    },
+    {
+      "word": "fient",
+      "category": "unusual"
+    },
+    {
+      "word": "hopak",
+      "category": "unusual"
+    },
+    {
+      "word": "tahas",
+      "category": "unusual"
+    },
+    {
+      "word": "fasci",
+      "category": "obscure"
+    },
+    {
+      "word": "prese",
+      "category": "unusual"
+    },
+    {
+      "word": "drows",
+      "category": "unusual"
+    },
+    {
+      "word": "moria",
+      "category": "unusual"
+    },
+    {
+      "word": "posse",
+      "category": "unusual"
+    },
+    {
+      "word": "glute",
+      "category": "obscure"
+    },
+    {
+      "word": "rabis",
+      "category": "unusual"
+    },
+    {
+      "word": "prove",
+      "category": "familiar"
+    },
+    {
+      "word": "rosin",
+      "category": "familiar"
+    },
+    {
+      "word": "apeek",
+      "category": "unusual"
+    },
+    {
+      "word": "cushy",
+      "category": "unusual"
+    },
+    {
+      "word": "study",
+      "category": "familiar"
+    },
+    {
+      "word": "tract",
+      "category": "familiar"
+    },
+    {
+      "word": "chalk",
+      "category": "familiar"
+    },
+    {
+      "word": "blond",
+      "category": "familiar"
+    },
+    {
+      "word": "hants",
+      "category": "obscure"
+    },
+    {
+      "word": "copse",
+      "category": "familiar"
+    },
+    {
+      "word": "seeks",
+      "category": "unusual"
+    },
+    {
+      "word": "sprug",
+      "category": "unusual"
+    },
+    {
+      "word": "romeo",
+      "category": "unusual"
+    },
+    {
+      "word": "shent",
+      "category": "unusual"
+    },
+    {
+      "word": "faffs",
+      "category": "unusual"
+    },
+    {
+      "word": "execs",
+      "category": "unusual"
+    },
+    {
+      "word": "moral",
+      "category": "familiar"
+    },
+    {
+      "word": "boobs",
+      "category": "unusual"
+    },
+    {
+      "word": "naled",
+      "category": "obscure"
+    },
+    {
+      "word": "gasps",
+      "category": "unusual"
+    },
+    {
+      "word": "event",
+      "category": "common"
+    },
+    {
+      "word": "belay",
+      "category": "familiar"
+    },
+    {
+      "word": "ursid",
+      "category": "obscure"
+    },
+    {
+      "word": "hydra",
+      "category": "familiar"
+    },
+    {
+      "word": "gyppy",
+      "category": "unusual"
+    },
+    {
+      "word": "lotes",
+      "category": "unusual"
+    },
+    {
+      "word": "kaiks",
+      "category": "obscure"
+    },
+    {
+      "word": "rings",
+      "category": "unusual"
+    },
+    {
+      "word": "feart",
+      "category": "obscure"
+    },
+    {
+      "word": "geeps",
+      "category": "unusual"
+    },
+    {
+      "word": "phyle",
+      "category": "obscure"
+    },
+    {
+      "word": "alant",
+      "category": "obscure"
+    },
+    {
+      "word": "zesty",
+      "category": "familiar"
+    },
+    {
+      "word": "zowie",
+      "category": "unusual"
+    },
+    {
+      "word": "brows",
+      "category": "familiar"
+    },
+    {
+      "word": "dimes",
+      "category": "unusual"
+    },
+    {
+      "word": "sizel",
+      "category": "unusual"
+    },
+    {
+      "word": "tasse",
+      "category": "obscure"
+    },
+    {
+      "word": "porny",
+      "category": "unusual"
+    },
+    {
+      "word": "vired",
+      "category": "unusual"
+    },
+    {
+      "word": "yumps",
+      "category": "obscure"
+    },
+    {
+      "word": "lyart",
+      "category": "obscure"
+    },
+    {
+      "word": "pyric",
+      "category": "obscure"
+    },
+    {
+      "word": "smear",
+      "category": "familiar"
+    },
+    {
+      "word": "terns",
+      "category": "unusual"
+    },
+    {
+      "word": "taler",
+      "category": "unusual"
+    },
+    {
+      "word": "immit",
+      "category": "obscure"
+    },
+    {
+      "word": "siled",
+      "category": "unusual"
+    },
+    {
+      "word": "sworn",
+      "category": "unusual"
+    },
+    {
+      "word": "genie",
+      "category": "familiar"
+    },
+    {
+      "word": "fleas",
+      "category": "unusual"
+    },
+    {
+      "word": "pervy",
+      "category": "unusual"
+    },
+    {
+      "word": "mirly",
+      "category": "unusual"
+    },
+    {
+      "word": "noted",
+      "category": "familiar"
+    },
+    {
+      "word": "conky",
+      "category": "unusual"
+    },
+    {
+      "word": "awned",
+      "category": "unusual"
+    },
+    {
+      "word": "desse",
+      "category": "unusual"
+    },
+    {
+      "word": "roral",
+      "category": "unusual"
+    },
+    {
+      "word": "bidon",
+      "category": "unusual"
+    },
+    {
+      "word": "towed",
+      "category": "unusual"
+    },
+    {
+      "word": "albas",
+      "category": "unusual"
+    },
+    {
+      "word": "posed",
+      "category": "unusual"
+    },
+    {
+      "word": "yenta",
+      "category": "unusual"
+    },
+    {
+      "word": "reais",
+      "category": "unusual"
+    },
+    {
+      "word": "swapt",
+      "category": "unusual"
+    },
+    {
+      "word": "sippy",
+      "category": "unusual"
+    },
+    {
+      "word": "synes",
+      "category": "unusual"
+    },
+    {
+      "word": "stole",
+      "category": "unusual"
+    },
+    {
+      "word": "coyly",
+      "category": "unusual"
+    },
+    {
+      "word": "treat",
+      "category": "familiar"
+    },
+    {
+      "word": "kilos",
+      "category": "familiar"
+    },
+    {
+      "word": "erugo",
+      "category": "obscure"
+    },
+    {
+      "word": "coats",
+      "category": "common"
+    },
+    {
+      "word": "seare",
+      "category": "unusual"
+    },
+    {
+      "word": "flier",
+      "category": "common"
+    },
+    {
+      "word": "feces",
+      "category": "familiar"
+    },
+    {
+      "word": "waxer",
+      "category": "unusual"
+    },
+    {
+      "word": "birsy",
+      "category": "unusual"
+    },
+    {
+      "word": "floes",
+      "category": "unusual"
+    },
+    {
+      "word": "glazy",
+      "category": "unusual"
+    },
+    {
+      "word": "lobos",
+      "category": "unusual"
+    },
+    {
+      "word": "oobit",
+      "category": "unusual"
+    },
+    {
+      "word": "spoon",
+      "category": "familiar"
+    },
+    {
+      "word": "yeves",
+      "category": "unusual"
+    },
+    {
+      "word": "hears",
+      "category": "common"
+    },
+    {
+      "word": "fadge",
+      "category": "obscure"
+    },
+    {
+      "word": "rummy",
+      "category": "unusual"
+    },
+    {
+      "word": "pawky",
+      "category": "unusual"
+    },
+    {
+      "word": "kudus",
+      "category": "obscure"
+    },
+    {
+      "word": "paper",
+      "category": "familiar"
+    },
+    {
+      "word": "penis",
+      "category": "familiar"
+    },
+    {
+      "word": "pilea",
+      "category": "obscure"
+    },
+    {
+      "word": "rumen",
+      "category": "unusual"
+    },
+    {
+      "word": "canto",
+      "category": "common"
+    },
+    {
+      "word": "plume",
+      "category": "familiar"
+    },
+    {
+      "word": "micky",
+      "category": "unusual"
+    },
+    {
+      "word": "gynie",
+      "category": "unusual"
+    },
+    {
+      "word": "spell",
+      "category": "unusual"
+    },
+    {
+      "word": "ligge",
+      "category": "obscure"
+    },
+    {
+      "word": "hapax",
+      "category": "obscure"
+    },
+    {
+      "word": "spawn",
+      "category": "unusual"
+    },
+    {
+      "word": "tased",
+      "category": "familiar"
+    },
+    {
+      "word": "burps",
+      "category": "unusual"
+    },
+    {
+      "word": "traps",
+      "category": "unusual"
+    },
+    {
+      "word": "murri",
+      "category": "unusual"
+    },
+    {
+      "word": "tamed",
+      "category": "familiar"
+    },
+    {
+      "word": "klang",
+      "category": "obscure"
+    },
+    {
+      "word": "dirts",
+      "category": "unusual"
+    },
+    {
+      "word": "hives",
+      "category": "familiar"
+    },
+    {
+      "word": "smeke",
+      "category": "unusual"
+    },
+    {
+      "word": "grame",
+      "category": "obscure"
+    },
+    {
+      "word": "retie",
+      "category": "unusual"
+    },
+    {
+      "word": "cheth",
+      "category": "obscure"
+    },
+    {
+      "word": "fouat",
+      "category": "obscure"
+    },
+    {
+      "word": "buaze",
+      "category": "obscure"
+    },
+    {
+      "word": "lycee",
+      "category": "obscure"
+    },
+    {
+      "word": "kheda",
+      "category": "obscure"
+    },
+    {
+      "word": "taish",
+      "category": "unusual"
+    },
+    {
+      "word": "depth",
+      "category": "common"
+    },
+    {
+      "word": "dices",
+      "category": "unusual"
+    },
+    {
+      "word": "pulse",
+      "category": "familiar"
+    },
+    {
+      "word": "coper",
+      "category": "obscure"
+    },
+    {
+      "word": "kauri",
+      "category": "obscure"
+    },
+    {
+      "word": "frise",
+      "category": "obscure"
+    },
+    {
+      "word": "shmek",
+      "category": "unusual"
+    },
+    {
+      "word": "thunk",
+      "category": "unusual"
+    },
+    {
+      "word": "hokes",
+      "category": "unusual"
+    },
+    {
+      "word": "preve",
+      "category": "obscure"
+    },
+    {
+      "word": "horny",
+      "category": "unusual"
+    },
+    {
+      "word": "wadge",
+      "category": "unusual"
+    },
+    {
+      "word": "dosha",
+      "category": "obscure"
+    },
+    {
+      "word": "cycle",
+      "category": "familiar"
+    },
+    {
+      "word": "cutie",
+      "category": "unusual"
+    },
+    {
+      "word": "subah",
+      "category": "unusual"
+    },
+    {
+      "word": "raias",
+      "category": "unusual"
+    },
+    {
+      "word": "varna",
+      "category": "obscure"
+    },
+    {
+      "word": "coned",
+      "category": "familiar"
+    },
+    {
+      "word": "skols",
+      "category": "obscure"
+    },
+    {
+      "word": "rewon",
+      "category": "unusual"
+    },
+    {
+      "word": "claps",
+      "category": "familiar"
+    },
+    {
+      "word": "skink",
+      "category": "familiar"
+    },
+    {
+      "word": "booze",
+      "category": "common"
+    },
+    {
+      "word": "gowds",
+      "category": "obscure"
+    },
+    {
+      "word": "echos",
+      "category": "common"
+    },
+    {
+      "word": "cavie",
+      "category": "obscure"
+    },
+    {
+      "word": "besit",
+      "category": "unusual"
+    },
+    {
+      "word": "neifs",
+      "category": "obscure"
+    },
+    {
+      "word": "booay",
+      "category": "unusual"
+    },
+    {
+      "word": "rueda",
+      "category": "unusual"
+    },
+    {
+      "word": "cacky",
+      "category": "unusual"
+    },
+    {
+      "word": "fayre",
+      "category": "unusual"
+    },
+    {
+      "word": "react",
+      "category": "familiar"
+    },
+    {
+      "word": "bolts",
+      "category": "unusual"
+    },
+    {
+      "word": "trapt",
+      "category": "unusual"
+    },
+    {
+      "word": "smith",
+      "category": "unusual"
+    },
+    {
+      "word": "yogas",
+      "category": "unusual"
+    },
+    {
+      "word": "arsey",
+      "category": "unusual"
+    },
+    {
+      "word": "bluet",
+      "category": "unusual"
+    },
+    {
+      "word": "fiefs",
+      "category": "unusual"
+    },
+    {
+      "word": "fawny",
+      "category": "obscure"
+    },
+    {
+      "word": "igged",
+      "category": "unusual"
+    },
+    {
+      "word": "ivies",
+      "category": "unusual"
+    },
+    {
+      "word": "games",
+      "category": "common"
+    },
+    {
+      "word": "drank",
+      "category": "unusual"
+    },
+    {
+      "word": "pyres",
+      "category": "unusual"
+    },
+    {
+      "word": "seams",
+      "category": "familiar"
+    },
+    {
+      "word": "duroc",
+      "category": "obscure"
+    },
+    {
+      "word": "hypes",
+      "category": "unusual"
+    },
+    {
+      "word": "exing",
+      "category": "unusual"
+    },
+    {
+      "word": "sitka",
+      "category": "unusual"
+    },
+    {
+      "word": "sulci",
+      "category": "obscure"
+    },
+    {
+      "word": "mecca",
+      "category": "familiar"
+    },
+    {
+      "word": "agree",
+      "category": "common"
+    },
+    {
+      "word": "ruing",
+      "category": "unusual"
+    },
+    {
+      "word": "amble",
+      "category": "familiar"
+    },
+    {
+      "word": "cerge",
+      "category": "obscure"
+    },
+    {
+      "word": "oleic",
+      "category": "obscure"
+    },
+    {
+      "word": "elpee",
+      "category": "obscure"
+    },
+    {
+      "word": "ridic",
+      "category": "unusual"
+    },
+    {
+      "word": "tammy",
+      "category": "unusual"
+    },
+    {
+      "word": "gitch",
+      "category": "obscure"
+    },
+    {
+      "word": "carbo",
+      "category": "unusual"
+    },
+    {
+      "word": "turfs",
+      "category": "unusual"
+    },
+    {
+      "word": "batts",
+      "category": "unusual"
+    },
+    {
+      "word": "plank",
+      "category": "unusual"
+    },
+    {
+      "word": "nidor",
+      "category": "obscure"
+    },
+    {
+      "word": "kreng",
+      "category": "unusual"
+    },
+    {
+      "word": "fordo",
+      "category": "unusual"
+    },
+    {
+      "word": "chawk",
+      "category": "obscure"
+    },
+    {
+      "word": "dexie",
+      "category": "unusual"
+    },
+    {
+      "word": "kauru",
+      "category": "obscure"
+    },
+    {
+      "word": "prate",
+      "category": "unusual"
+    },
+    {
+      "word": "gamma",
+      "category": "common"
+    },
+    {
+      "word": "lengs",
+      "category": "obscure"
+    },
+    {
+      "word": "ruins",
+      "category": "unusual"
+    },
+    {
+      "word": "koras",
+      "category": "obscure"
+    },
+    {
+      "word": "cooms",
+      "category": "obscure"
+    },
+    {
+      "word": "soyas",
+      "category": "unusual"
+    },
+    {
+      "word": "seans",
+      "category": "obscure"
+    },
+    {
+      "word": "deism",
+      "category": "unusual"
+    },
+    {
+      "word": "navew",
+      "category": "unusual"
+    },
+    {
+      "word": "sewar",
+      "category": "unusual"
+    },
+    {
+      "word": "tsubo",
+      "category": "obscure"
+    },
+    {
+      "word": "tawie",
+      "category": "unusual"
+    },
+    {
+      "word": "menad",
+      "category": "obscure"
+    },
+    {
+      "word": "amici",
+      "category": "obscure"
+    },
+    {
+      "word": "quirk",
+      "category": "unusual"
+    },
+    {
+      "word": "nahal",
+      "category": "obscure"
+    },
+    {
+      "word": "briks",
+      "category": "obscure"
+    },
+    {
+      "word": "knaps",
+      "category": "unusual"
+    },
+    {
+      "word": "churr",
+      "category": "unusual"
+    },
+    {
+      "word": "gnarl",
+      "category": "unusual"
+    },
+    {
+      "word": "thigs",
+      "category": "unusual"
+    },
+    {
+      "word": "mechs",
+      "category": "unusual"
+    },
+    {
+      "word": "spoke",
+      "category": "familiar"
+    },
+    {
+      "word": "scout",
+      "category": "familiar"
+    },
+    {
+      "word": "frets",
+      "category": "unusual"
+    },
+    {
+      "word": "rhime",
+      "category": "obscure"
+    },
+    {
+      "word": "nyaff",
+      "category": "unusual"
+    },
+    {
+      "word": "laser",
+      "category": "familiar"
+    },
+    {
+      "word": "herls",
+      "category": "obscure"
+    },
+    {
+      "word": "colly",
+      "category": "unusual"
+    },
+    {
+      "word": "trona",
+      "category": "unusual"
+    },
+    {
+      "word": "rails",
+      "category": "unusual"
+    },
+    {
+      "word": "fined",
+      "category": "unusual"
+    },
+    {
+      "word": "relic",
+      "category": "familiar"
+    },
+    {
+      "word": "joule",
+      "category": "familiar"
+    },
+    {
+      "word": "gippo",
+      "category": "unusual"
+    },
+    {
+      "word": "gilly",
+      "category": "unusual"
+    },
+    {
+      "word": "tatar",
+      "category": "unusual"
+    },
+    {
+      "word": "braai",
+      "category": "obscure"
+    },
+    {
+      "word": "jades",
+      "category": "unusual"
+    },
+    {
+      "word": "aback",
+      "category": "common"
+    },
+    {
+      "word": "diels",
+      "category": "unusual"
+    },
+    {
+      "word": "anele",
+      "category": "obscure"
+    },
+    {
+      "word": "feats",
+      "category": "unusual"
+    },
+    {
+      "word": "hefts",
+      "category": "unusual"
+    },
+    {
+      "word": "begum",
+      "category": "obscure"
+    },
+    {
+      "word": "mired",
+      "category": "unusual"
+    },
+    {
+      "word": "scabs",
+      "category": "unusual"
+    },
+    {
+      "word": "stats",
+      "category": "familiar"
+    },
+    {
+      "word": "ollav",
+      "category": "obscure"
+    },
+    {
+      "word": "fumed",
+      "category": "unusual"
+    },
+    {
+      "word": "genty",
+      "category": "obscure"
+    },
+    {
+      "word": "vendu",
+      "category": "obscure"
+    },
+    {
+      "word": "druxy",
+      "category": "obscure"
+    },
+    {
+      "word": "swoun",
+      "category": "unusual"
+    },
+    {
+      "word": "shchi",
+      "category": "obscure"
+    },
+    {
+      "word": "audad",
+      "category": "unusual"
+    },
+    {
+      "word": "gliff",
+      "category": "unusual"
+    },
+    {
+      "word": "mixen",
+      "category": "unusual"
+    },
+    {
+      "word": "kaifs",
+      "category": "obscure"
+    },
+    {
+      "word": "molla",
+      "category": "obscure"
+    },
+    {
+      "word": "coarb",
+      "category": "obscure"
+    },
+    {
+      "word": "clept",
+      "category": "unusual"
+    },
+    {
+      "word": "mothy",
+      "category": "obscure"
+    },
+    {
+      "word": "twist",
+      "category": "familiar"
+    },
+    {
+      "word": "torot",
+      "category": "obscure"
+    },
+    {
+      "word": "songs",
+      "category": "unusual"
+    },
+    {
+      "word": "teugh",
+      "category": "obscure"
+    },
+    {
+      "word": "houfs",
+      "category": "obscure"
+    },
+    {
+      "word": "falaj",
+      "category": "obscure"
+    },
+    {
+      "word": "corse",
+      "category": "unusual"
+    },
+    {
+      "word": "jocky",
+      "category": "unusual"
+    },
+    {
+      "word": "quant",
+      "category": "unusual"
+    },
+    {
+      "word": "kames",
+      "category": "unusual"
+    },
+    {
+      "word": "doody",
+      "category": "unusual"
+    },
+    {
+      "word": "parae",
+      "category": "obscure"
+    },
+    {
+      "word": "ferry",
+      "category": "familiar"
+    },
+    {
+      "word": "hells",
+      "category": "unusual"
+    },
+    {
+      "word": "krais",
+      "category": "obscure"
+    },
+    {
+      "word": "abaca",
+      "category": "obscure"
+    },
+    {
+      "word": "skers",
+      "category": "obscure"
+    },
+    {
+      "word": "fests",
+      "category": "unusual"
+    },
+    {
+      "word": "turks",
+      "category": "unusual"
+    },
+    {
+      "word": "whiny",
+      "category": "familiar"
+    },
+    {
+      "word": "rumal",
+      "category": "obscure"
+    },
+    {
+      "word": "womby",
+      "category": "unusual"
+    },
+    {
+      "word": "plaid",
+      "category": "familiar"
+    },
+    {
+      "word": "orzos",
+      "category": "obscure"
+    },
+    {
+      "word": "teggs",
+      "category": "unusual"
+    },
+    {
+      "word": "gyved",
+      "category": "obscure"
+    },
+    {
+      "word": "dicky",
+      "category": "unusual"
+    },
+    {
+      "word": "sirra",
+      "category": "unusual"
+    },
+    {
+      "word": "picas",
+      "category": "unusual"
+    },
+    {
+      "word": "niqab",
+      "category": "obscure"
+    },
+    {
+      "word": "culms",
+      "category": "obscure"
+    },
+    {
+      "word": "shend",
+      "category": "obscure"
+    },
+    {
+      "word": "gypos",
+      "category": "obscure"
+    },
+    {
+      "word": "upsee",
+      "category": "obscure"
+    },
+    {
+      "word": "grego",
+      "category": "obscure"
+    },
+    {
+      "word": "sibyl",
+      "category": "unusual"
+    },
+    {
+      "word": "flush",
+      "category": "unusual"
+    },
+    {
+      "word": "cowls",
+      "category": "unusual"
+    },
+    {
+      "word": "wamed",
+      "category": "obscure"
+    },
+    {
+      "word": "dicot",
+      "category": "obscure"
+    },
+    {
+      "word": "muggs",
+      "category": "unusual"
+    },
+    {
+      "word": "odyle",
+      "category": "obscure"
+    },
+    {
+      "word": "arrow",
+      "category": "familiar"
+    },
+    {
+      "word": "hemal",
+      "category": "obscure"
+    },
+    {
+      "word": "bones",
+      "category": "unusual"
+    },
+    {
+      "word": "grads",
+      "category": "unusual"
+    },
+    {
+      "word": "vibex",
+      "category": "obscure"
+    },
+    {
+      "word": "skogs",
+      "category": "obscure"
+    },
+    {
+      "word": "gives",
+      "category": "common"
+    },
+    {
+      "word": "tined",
+      "category": "unusual"
+    },
+    {
+      "word": "kakis",
+      "category": "unusual"
+    },
+    {
+      "word": "racer",
+      "category": "unusual"
+    },
+    {
+      "word": "smirk",
+      "category": "unusual"
+    },
+    {
+      "word": "chins",
+      "category": "familiar"
+    },
+    {
+      "word": "whelp",
+      "category": "familiar"
+    },
+    {
+      "word": "moyas",
+      "category": "unusual"
+    },
+    {
+      "word": "ewers",
+      "category": "obscure"
+    },
+    {
+      "word": "slogs",
+      "category": "unusual"
+    },
+    {
+      "word": "linny",
+      "category": "unusual"
+    },
+    {
+      "word": "hully",
+      "category": "unusual"
+    },
+    {
+      "word": "eches",
+      "category": "unusual"
+    },
+    {
+      "word": "perms",
+      "category": "unusual"
+    },
+    {
+      "word": "sowed",
+      "category": "unusual"
+    },
+    {
+      "word": "colic",
+      "category": "familiar"
+    },
+    {
+      "word": "brans",
+      "category": "obscure"
+    },
+    {
+      "word": "shtum",
+      "category": "unusual"
+    },
+    {
+      "word": "liana",
+      "category": "obscure"
+    },
+    {
+      "word": "griff",
+      "category": "unusual"
+    },
+    {
+      "word": "misos",
+      "category": "unusual"
+    },
+    {
+      "word": "yeans",
+      "category": "unusual"
+    },
+    {
+      "word": "elves",
+      "category": "unusual"
+    },
+    {
+      "word": "seeds",
+      "category": "unusual"
+    },
+    {
+      "word": "opahs",
+      "category": "obscure"
+    },
+    {
+      "word": "macle",
+      "category": "obscure"
+    },
+    {
+      "word": "betty",
+      "category": "unusual"
+    },
+    {
+      "word": "haste",
+      "category": "familiar"
+    },
+    {
+      "word": "curdy",
+      "category": "obscure"
+    },
+    {
+      "word": "deevs",
+      "category": "unusual"
+    },
+    {
+      "word": "cakes",
+      "category": "common"
+    },
+    {
+      "word": "crape",
+      "category": "unusual"
+    },
+    {
+      "word": "asked",
+      "category": "common"
+    },
+    {
+      "word": "arame",
+      "category": "obscure"
+    },
+    {
+      "word": "itchy",
+      "category": "familiar"
+    },
+    {
+      "word": "uncut",
+      "category": "unusual"
+    },
+    {
+      "word": "dimer",
+      "category": "familiar"
+    },
+    {
+      "word": "spoom",
+      "category": "unusual"
+    },
+    {
+      "word": "woads",
+      "category": "unusual"
+    },
+    {
+      "word": "jours",
+      "category": "unusual"
+    },
+    {
+      "word": "snarf",
+      "category": "unusual"
+    },
+    {
+      "word": "soces",
+      "category": "unusual"
+    },
+    {
+      "word": "barmy",
+      "category": "familiar"
+    },
+    {
+      "word": "nertz",
+      "category": "obscure"
+    },
+    {
+      "word": "cloam",
+      "category": "unusual"
+    },
+    {
+      "word": "hunky",
+      "category": "familiar"
+    },
+    {
+      "word": "flams",
+      "category": "unusual"
+    },
+    {
+      "word": "lubed",
+      "category": "unusual"
+    },
+    {
+      "word": "flubs",
+      "category": "unusual"
+    },
+    {
+      "word": "synch",
+      "category": "unusual"
+    },
+    {
+      "word": "carol",
+      "category": "familiar"
+    },
+    {
+      "word": "prick",
+      "category": "familiar"
+    },
+    {
+      "word": "datum",
+      "category": "familiar"
+    },
+    {
+      "word": "minks",
+      "category": "familiar"
+    },
+    {
+      "word": "salpa",
+      "category": "obscure"
+    },
+    {
+      "word": "blest",
+      "category": "unusual"
+    },
+    {
+      "word": "dooks",
+      "category": "unusual"
+    },
+    {
+      "word": "arras",
+      "category": "unusual"
+    },
+    {
+      "word": "sheet",
+      "category": "familiar"
+    },
+    {
+      "word": "watap",
+      "category": "obscure"
+    },
+    {
+      "word": "gator",
+      "category": "familiar"
+    },
+    {
+      "word": "dorbs",
+      "category": "unusual"
+    },
+    {
+      "word": "cronk",
+      "category": "unusual"
+    },
+    {
+      "word": "quern",
+      "category": "obscure"
+    },
+    {
+      "word": "cuter",
+      "category": "unusual"
+    },
+    {
+      "word": "sonse",
+      "category": "unusual"
+    },
+    {
+      "word": "sklim",
+      "category": "obscure"
+    },
+    {
+      "word": "fazed",
+      "category": "unusual"
+    },
+    {
+      "word": "elemi",
+      "category": "obscure"
+    },
+    {
+      "word": "fibro",
+      "category": "obscure"
+    },
+    {
+      "word": "uncoy",
+      "category": "unusual"
+    },
+    {
+      "word": "flack",
+      "category": "unusual"
+    },
+    {
+      "word": "tacky",
+      "category": "unusual"
+    },
+    {
+      "word": "yukes",
+      "category": "unusual"
+    },
+    {
+      "word": "hemic",
+      "category": "obscure"
+    },
+    {
+      "word": "anata",
+      "category": "obscure"
+    },
+    {
+      "word": "mugga",
+      "category": "unusual"
+    },
+    {
+      "word": "coste",
+      "category": "obscure"
+    },
+    {
+      "word": "uveas",
+      "category": "obscure"
+    },
+    {
+      "word": "clued",
+      "category": "familiar"
+    },
+    {
+      "word": "putts",
+      "category": "unusual"
+    },
+    {
+      "word": "rabat",
+      "category": "unusual"
+    },
+    {
+      "word": "pipes",
+      "category": "familiar"
+    },
+    {
+      "word": "shris",
+      "category": "unusual"
+    },
+    {
+      "word": "aguti",
+      "category": "obscure"
+    },
+    {
+      "word": "chums",
+      "category": "unusual"
+    },
+    {
+      "word": "meril",
+      "category": "obscure"
+    },
+    {
+      "word": "plash",
+      "category": "unusual"
+    },
+    {
+      "word": "dagos",
+      "category": "unusual"
+    },
+    {
+      "word": "ackee",
+      "category": "obscure"
+    },
+    {
+      "word": "segni",
+      "category": "obscure"
+    },
+    {
+      "word": "buyer",
+      "category": "common"
+    },
+    {
+      "word": "tazze",
+      "category": "obscure"
+    },
+    {
+      "word": "daals",
+      "category": "unusual"
+    },
+    {
+      "word": "levin",
+      "category": "unusual"
+    },
+    {
+      "word": "hench",
+      "category": "unusual"
+    },
+    {
+      "word": "leary",
+      "category": "unusual"
+    },
+    {
+      "word": "focal",
+      "category": "familiar"
+    },
+    {
+      "word": "begar",
+      "category": "obscure"
+    },
+    {
+      "word": "ewked",
+      "category": "unusual"
+    },
+    {
+      "word": "alowe",
+      "category": "unusual"
+    },
+    {
+      "word": "poule",
+      "category": "unusual"
+    },
+    {
+      "word": "linux",
+      "category": "familiar"
+    },
+    {
+      "word": "mizzy",
+      "category": "unusual"
+    },
+    {
+      "word": "dipso",
+      "category": "unusual"
+    },
+    {
+      "word": "awato",
+      "category": "obscure"
+    },
+    {
+      "word": "siver",
+      "category": "unusual"
+    },
+    {
+      "word": "paves",
+      "category": "unusual"
+    },
+    {
+      "word": "mbira",
+      "category": "unusual"
+    },
+    {
+      "word": "prent",
+      "category": "unusual"
+    },
+    {
+      "word": "jorum",
+      "category": "obscure"
+    },
+    {
+      "word": "tates",
+      "category": "unusual"
+    },
+    {
+      "word": "balls",
+      "category": "common"
+    },
+    {
+      "word": "dance",
+      "category": "common"
+    },
+    {
+      "word": "grovy",
+      "category": "unusual"
+    },
+    {
+      "word": "death",
+      "category": "common"
+    },
+    {
+      "word": "ceder",
+      "category": "unusual"
+    },
+    {
+      "word": "tsadi",
+      "category": "obscure"
+    },
+    {
+      "word": "kiddy",
+      "category": "unusual"
+    },
+    {
+      "word": "aheap",
+      "category": "familiar"
+    },
+    {
+      "word": "polyp",
+      "category": "obscure"
+    },
+    {
+      "word": "could",
+      "category": "common"
+    },
+    {
+      "word": "domal",
+      "category": "unusual"
+    },
+    {
+      "word": "stims",
+      "category": "unusual"
+    },
+    {
+      "word": "naric",
+      "category": "unusual"
+    },
+    {
+      "word": "faddy",
+      "category": "unusual"
+    },
+    {
+      "word": "tanas",
+      "category": "unusual"
+    },
+    {
+      "word": "poyse",
+      "category": "unusual"
+    },
+    {
+      "word": "erned",
+      "category": "unusual"
+    },
+    {
+      "word": "whips",
+      "category": "unusual"
+    },
+    {
+      "word": "bunko",
+      "category": "unusual"
+    },
+    {
+      "word": "diols",
+      "category": "obscure"
+    },
+    {
+      "word": "stown",
+      "category": "unusual"
+    },
+    {
+      "word": "spiny",
+      "category": "unusual"
+    },
+    {
+      "word": "annoy",
+      "category": "unusual"
+    },
+    {
+      "word": "woxen",
+      "category": "unusual"
+    },
+    {
+      "word": "bouge",
+      "category": "obscure"
+    },
+    {
+      "word": "foams",
+      "category": "unusual"
+    },
+    {
+      "word": "faces",
+      "category": "common"
+    },
+    {
+      "word": "spane",
+      "category": "unusual"
+    },
+    {
+      "word": "pudor",
+      "category": "unusual"
+    },
+    {
+      "word": "venue",
+      "category": "familiar"
+    },
+    {
+      "word": "murls",
+      "category": "unusual"
+    },
+    {
+      "word": "zuzim",
+      "category": "obscure"
+    },
+    {
+      "word": "cacao",
+      "category": "familiar"
+    },
+    {
+      "word": "kulas",
+      "category": "obscure"
+    },
+    {
+      "word": "decry",
+      "category": "unusual"
+    },
+    {
+      "word": "guiro",
+      "category": "unusual"
+    },
+    {
+      "word": "craic",
+      "category": "unusual"
+    },
+    {
+      "word": "tusky",
+      "category": "unusual"
+    },
+    {
+      "word": "poupe",
+      "category": "obscure"
+    },
+    {
+      "word": "klong",
+      "category": "obscure"
+    },
+    {
+      "word": "samba",
+      "category": "unusual"
+    },
+    {
+      "word": "oleum",
+      "category": "unusual"
+    },
+    {
+      "word": "gurdy",
+      "category": "unusual"
+    },
+    {
+      "word": "sheep",
+      "category": "familiar"
+    },
+    {
+      "word": "levee",
+      "category": "unusual"
+    },
+    {
+      "word": "mavie",
+      "category": "unusual"
+    },
+    {
+      "word": "satin",
+      "category": "familiar"
+    },
+    {
+      "word": "ancho",
+      "category": "unusual"
+    },
+    {
+      "word": "paxes",
+      "category": "unusual"
+    },
+    {
+      "word": "grume",
+      "category": "unusual"
+    },
+    {
+      "word": "muirs",
+      "category": "unusual"
+    },
+    {
+      "word": "scour",
+      "category": "unusual"
+    },
+    {
+      "word": "lushy",
+      "category": "unusual"
+    },
+    {
+      "word": "motor",
+      "category": "familiar"
+    },
+    {
+      "word": "septa",
+      "category": "unusual"
+    },
+    {
+      "word": "toits",
+      "category": "unusual"
+    },
+    {
+      "word": "hotly",
+      "category": "unusual"
+    },
+    {
+      "word": "diwan",
+      "category": "unusual"
+    },
+    {
+      "word": "cheer",
+      "category": "familiar"
+    },
+    {
+      "word": "chide",
+      "category": "familiar"
+    },
+    {
+      "word": "chair",
+      "category": "common"
+    },
+    {
+      "word": "ducat",
+      "category": "unusual"
+    },
+    {
+      "word": "yagis",
+      "category": "unusual"
+    },
+    {
+      "word": "endow",
+      "category": "unusual"
+    },
+    {
+      "word": "yales",
+      "category": "unusual"
+    },
+    {
+      "word": "souls",
+      "category": "unusual"
+    },
+    {
+      "word": "tuism",
+      "category": "unusual"
+    },
+    {
+      "word": "droob",
+      "category": "unusual"
+    },
+    {
+      "word": "tyers",
+      "category": "unusual"
+    },
+    {
+      "word": "folds",
+      "category": "common"
+    },
+    {
+      "word": "spays",
+      "category": "obscure"
+    },
+    {
+      "word": "nutso",
+      "category": "unusual"
+    },
+    {
+      "word": "fitly",
+      "category": "unusual"
+    },
+    {
+      "word": "ditsy",
+      "category": "unusual"
+    },
+    {
+      "word": "oinks",
+      "category": "unusual"
+    },
+    {
+      "word": "ourie",
+      "category": "obscure"
+    },
+    {
+      "word": "conge",
+      "category": "unusual"
+    },
+    {
+      "word": "dwine",
+      "category": "unusual"
+    },
+    {
+      "word": "sains",
+      "category": "unusual"
+    },
+    {
+      "word": "shtik",
+      "category": "obscure"
+    },
+    {
+      "word": "aleck",
+      "category": "unusual"
+    },
+    {
+      "word": "spuds",
+      "category": "unusual"
+    },
+    {
+      "word": "kelep",
+      "category": "unusual"
+    },
+    {
+      "word": "shops",
+      "category": "unusual"
+    },
+    {
+      "word": "fille",
+      "category": "unusual"
+    },
+    {
+      "word": "hosta",
+      "category": "unusual"
+    },
+    {
+      "word": "copen",
+      "category": "unusual"
+    },
+    {
+      "word": "gates",
+      "category": "common"
+    },
+    {
+      "word": "scoog",
+      "category": "unusual"
+    },
+    {
+      "word": "haver",
+      "category": "unusual"
+    },
+    {
+      "word": "shorl",
+      "category": "obscure"
+    },
+    {
+      "word": "avale",
+      "category": "unusual"
+    },
+    {
+      "word": "sinds",
+      "category": "unusual"
+    },
+    {
+      "word": "dorps",
+      "category": "unusual"
+    },
+    {
+      "word": "lowed",
+      "category": "unusual"
+    },
+    {
+      "word": "riant",
+      "category": "obscure"
+    },
+    {
+      "word": "funky",
+      "category": "unusual"
+    },
+    {
+      "word": "genny",
+      "category": "unusual"
+    },
+    {
+      "word": "speld",
+      "category": "unusual"
+    },
+    {
+      "word": "sikas",
+      "category": "unusual"
+    },
+    {
+      "word": "swack",
+      "category": "unusual"
+    },
+    {
+      "word": "wicks",
+      "category": "familiar"
+    },
+    {
+      "word": "sedum",
+      "category": "unusual"
+    },
+    {
+      "word": "shads",
+      "category": "unusual"
+    },
+    {
+      "word": "wulls",
+      "category": "unusual"
+    },
+    {
+      "word": "toffs",
+      "category": "unusual"
+    },
+    {
+      "word": "beaus",
+      "category": "unusual"
+    },
+    {
+      "word": "muntu",
+      "category": "unusual"
+    },
+    {
+      "word": "kissy",
+      "category": "unusual"
+    },
+    {
+      "word": "cutty",
+      "category": "unusual"
+    },
+    {
+      "word": "vised",
+      "category": "unusual"
+    },
+    {
+      "word": "gazer",
+      "category": "unusual"
+    },
+    {
+      "word": "cirri",
+      "category": "unusual"
+    },
+    {
+      "word": "volar",
+      "category": "unusual"
+    },
+    {
+      "word": "magus",
+      "category": "obscure"
+    },
+    {
+      "word": "zoppo",
+      "category": "obscure"
+    },
+    {
+      "word": "glums",
+      "category": "unusual"
+    },
+    {
+      "word": "wases",
+      "category": "unusual"
+    },
+    {
+      "word": "wrapt",
+      "category": "unusual"
+    },
+    {
+      "word": "lezes",
+      "category": "unusual"
+    },
+    {
+      "word": "heled",
+      "category": "unusual"
+    },
+    {
+      "word": "kiley",
+      "category": "unusual"
+    },
+    {
+      "word": "sture",
+      "category": "unusual"
+    },
+    {
+      "word": "kogal",
+      "category": "obscure"
+    },
+    {
+      "word": "ashed",
+      "category": "unusual"
+    },
+    {
+      "word": "sinks",
+      "category": "unusual"
+    },
+    {
+      "word": "bolus",
+      "category": "unusual"
+    },
+    {
+      "word": "kyars",
+      "category": "unusual"
+    },
+    {
+      "word": "risus",
+      "category": "unusual"
+    },
+    {
+      "word": "stave",
+      "category": "unusual"
+    },
+    {
+      "word": "smore",
+      "category": "unusual"
+    },
+    {
+      "word": "gleby",
+      "category": "unusual"
+    },
+    {
+      "word": "worms",
+      "category": "unusual"
+    },
+    {
+      "word": "yarrs",
+      "category": "unusual"
+    },
+    {
+      "word": "tifts",
+      "category": "obscure"
+    },
+    {
+      "word": "bowes",
+      "category": "unusual"
+    },
+    {
+      "word": "gambo",
+      "category": "unusual"
+    },
+    {
+      "word": "oared",
+      "category": "unusual"
+    },
+    {
+      "word": "filch",
+      "category": "unusual"
+    },
+    {
+      "word": "taper",
+      "category": "unusual"
+    },
+    {
+      "word": "sambo",
+      "category": "unusual"
+    },
+    {
+      "word": "benis",
+      "category": "unusual"
+    },
+    {
+      "word": "boral",
+      "category": "unusual"
+    },
+    {
+      "word": "tocos",
+      "category": "unusual"
+    },
+    {
+      "word": "mento",
+      "category": "unusual"
+    },
+    {
+      "word": "spark",
+      "category": "unusual"
+    },
+    {
+      "word": "cusum",
+      "category": "unusual"
+    },
+    {
+      "word": "mirid",
+      "category": "obscure"
+    },
+    {
+      "word": "wades",
+      "category": "familiar"
+    },
+    {
+      "word": "outro",
+      "category": "unusual"
+    },
+    {
+      "word": "poles",
+      "category": "unusual"
+    },
+    {
+      "word": "shade",
+      "category": "unusual"
+    },
+    {
+      "word": "bowat",
+      "category": "unusual"
+    },
+    {
+      "word": "rally",
+      "category": "familiar"
+    },
+    {
+      "word": "acute",
+      "category": "common"
+    },
+    {
+      "word": "codas",
+      "category": "unusual"
+    },
+    {
+      "word": "worse",
+      "category": "familiar"
+    },
+    {
+      "word": "dined",
+      "category": "common"
+    },
+    {
+      "word": "shoji",
+      "category": "familiar"
+    },
+    {
+      "word": "atmas",
+      "category": "unusual"
+    },
+    {
+      "word": "lawns",
+      "category": "familiar"
+    },
+    {
+      "word": "azons",
+      "category": "unusual"
+    },
+    {
+      "word": "stage",
+      "category": "familiar"
+    },
+    {
+      "word": "yourn",
+      "category": "unusual"
+    },
+    {
+      "word": "agita",
+      "category": "familiar"
+    },
+    {
+      "word": "druid",
+      "category": "familiar"
+    },
+    {
+      "word": "gyres",
+      "category": "obscure"
+    },
+    {
+      "word": "sicky",
+      "category": "unusual"
+    },
+    {
+      "word": "letch",
+      "category": "unusual"
+    },
+    {
+      "word": "earst",
+      "category": "unusual"
+    },
+    {
+      "word": "vasal",
+      "category": "unusual"
+    },
+    {
+      "word": "plies",
+      "category": "unusual"
+    },
+    {
+      "word": "cully",
+      "category": "unusual"
+    },
+    {
+      "word": "minae",
+      "category": "unusual"
+    },
+    {
+      "word": "thete",
+      "category": "unusual"
+    },
+    {
+      "word": "gules",
+      "category": "unusual"
+    },
+    {
+      "word": "deled",
+      "category": "unusual"
+    },
+    {
+      "word": "soree",
+      "category": "unusual"
+    },
+    {
+      "word": "torsk",
+      "category": "obscure"
+    },
+    {
+      "word": "sapid",
+      "category": "obscure"
+    },
+    {
+      "word": "dunch",
+      "category": "obscure"
+    },
+    {
+      "word": "gumma",
+      "category": "unusual"
+    },
+    {
+      "word": "cruve",
+      "category": "unusual"
+    },
+    {
+      "word": "dusky",
+      "category": "unusual"
+    },
+    {
+      "word": "rejon",
+      "category": "obscure"
+    },
+    {
+      "word": "sprag",
+      "category": "obscure"
+    },
+    {
+      "word": "poddy",
+      "category": "unusual"
+    },
+    {
+      "word": "huzzy",
+      "category": "unusual"
+    },
+    {
+      "word": "lifes",
+      "category": "unusual"
+    },
+    {
+      "word": "lobby",
+      "category": "familiar"
+    },
+    {
+      "word": "redox",
+      "category": "unusual"
+    },
+    {
+      "word": "mezzo",
+      "category": "unusual"
+    },
+    {
+      "word": "marle",
+      "category": "unusual"
+    },
+    {
+      "word": "berms",
+      "category": "unusual"
+    },
+    {
+      "word": "gravy",
+      "category": "familiar"
+    },
+    {
+      "word": "indow",
+      "category": "unusual"
+    },
+    {
+      "word": "bosom",
+      "category": "unusual"
+    },
+    {
+      "word": "nones",
+      "category": "unusual"
+    },
+    {
+      "word": "sylis",
+      "category": "unusual"
+    },
+    {
+      "word": "zygal",
+      "category": "obscure"
+    },
+    {
+      "word": "gilds",
+      "category": "unusual"
+    },
+    {
+      "word": "baled",
+      "category": "unusual"
+    },
+    {
+      "word": "yiked",
+      "category": "unusual"
+    },
+    {
+      "word": "pilch",
+      "category": "unusual"
+    },
+    {
+      "word": "kombu",
+      "category": "unusual"
+    },
+    {
+      "word": "siege",
+      "category": "familiar"
+    },
+    {
+      "word": "onery",
+      "category": "unusual"
+    },
+    {
+      "word": "trims",
+      "category": "unusual"
+    },
+    {
+      "word": "wojus",
+      "category": "unusual"
+    },
+    {
+      "word": "dunam",
+      "category": "obscure"
+    },
+    {
+      "word": "stane",
+      "category": "unusual"
+    },
+    {
+      "word": "debug",
+      "category": "common"
+    },
+    {
+      "word": "duars",
+      "category": "unusual"
+    },
+    {
+      "word": "hymen",
+      "category": "obscure"
+    },
+    {
+      "word": "shaya",
+      "category": "unusual"
+    },
+    {
+      "word": "dizzy",
+      "category": "common"
+    },
+    {
+      "word": "dover",
+      "category": "unusual"
+    },
+    {
+      "word": "banns",
+      "category": "unusual"
+    },
+    {
+      "word": "wrast",
+      "category": "unusual"
+    },
+    {
+      "word": "upbow",
+      "category": "unusual"
+    },
+    {
+      "word": "sewed",
+      "category": "unusual"
+    },
+    {
+      "word": "boule",
+      "category": "unusual"
+    },
+    {
+      "word": "amply",
+      "category": "common"
+    },
+    {
+      "word": "ohias",
+      "category": "unusual"
+    },
+    {
+      "word": "hafts",
+      "category": "unusual"
+    },
+    {
+      "word": "cuffs",
+      "category": "unusual"
+    },
+    {
+      "word": "chaft",
+      "category": "unusual"
+    },
+    {
+      "word": "burke",
+      "category": "unusual"
+    },
+    {
+      "word": "corer",
+      "category": "familiar"
+    },
+    {
+      "word": "squib",
+      "category": "familiar"
+    },
+    {
+      "word": "quays",
+      "category": "unusual"
+    },
+    {
+      "word": "lotos",
+      "category": "unusual"
+    },
+    {
+      "word": "soppy",
+      "category": "unusual"
+    },
+    {
+      "word": "hilch",
+      "category": "unusual"
+    },
+    {
+      "word": "horis",
+      "category": "unusual"
+    },
+    {
+      "word": "gripy",
+      "category": "unusual"
+    },
+    {
+      "word": "aggro",
+      "category": "unusual"
+    },
+    {
+      "word": "hyson",
+      "category": "unusual"
+    },
+    {
+      "word": "sudor",
+      "category": "unusual"
+    },
+    {
+      "word": "farts",
+      "category": "unusual"
+    },
+    {
+      "word": "carvy",
+      "category": "unusual"
+    },
+    {
+      "word": "jeels",
+      "category": "unusual"
+    },
+    {
+      "word": "acidy",
+      "category": "unusual"
+    },
+    {
+      "word": "elchi",
+      "category": "unusual"
+    },
+    {
+      "word": "chado",
+      "category": "unusual"
+    },
+    {
+      "word": "sowse",
+      "category": "unusual"
+    },
+    {
+      "word": "bogue",
+      "category": "unusual"
+    },
+    {
+      "word": "sloan",
+      "category": "unusual"
+    },
+    {
+      "word": "ships",
+      "category": "unusual"
+    },
+    {
+      "word": "grass",
+      "category": "common"
+    },
+    {
+      "word": "gadjo",
+      "category": "unusual"
+    },
+    {
+      "word": "coyau",
+      "category": "unusual"
+    },
+    {
+      "word": "strag",
+      "category": "unusual"
+    },
+    {
+      "word": "sowfs",
+      "category": "unusual"
+    },
+    {
+      "word": "vaute",
+      "category": "obscure"
+    },
+    {
+      "word": "quoit",
+      "category": "unusual"
+    },
+    {
+      "word": "yeast",
+      "category": "familiar"
+    },
+    {
+      "word": "desex",
+      "category": "unusual"
+    },
+    {
+      "word": "shred",
+      "category": "unusual"
+    },
+    {
+      "word": "morse",
+      "category": "unusual"
+    },
+    {
+      "word": "fract",
+      "category": "unusual"
+    },
+    {
+      "word": "cupid",
+      "category": "unusual"
+    },
+    {
+      "word": "tinas",
+      "category": "unusual"
+    },
+    {
+      "word": "salto",
+      "category": "unusual"
+    },
+    {
+      "word": "buran",
+      "category": "unusual"
+    },
+    {
+      "word": "belar",
+      "category": "unusual"
+    },
+    {
+      "word": "mawks",
+      "category": "unusual"
+    },
+    {
+      "word": "dempt",
+      "category": "unusual"
+    },
+    {
+      "word": "creme",
+      "category": "unusual"
+    },
+    {
+      "word": "khaya",
+      "category": "obscure"
+    },
+    {
+      "word": "caese",
+      "category": "obscure"
+    },
+    {
+      "word": "foots",
+      "category": "unusual"
+    },
+    {
+      "word": "dumbs",
+      "category": "unusual"
+    },
+    {
+      "word": "segar",
+      "category": "unusual"
+    },
+    {
+      "word": "ranks",
+      "category": "unusual"
+    },
+    {
+      "word": "wadis",
+      "category": "obscure"
+    },
+    {
+      "word": "beach",
+      "category": "common"
+    },
+    {
+      "word": "gamps",
+      "category": "unusual"
+    },
+    {
+      "word": "coyed",
+      "category": "unusual"
+    },
+    {
+      "word": "skell",
+      "category": "unusual"
+    },
+    {
+      "word": "typey",
+      "category": "unusual"
+    },
+    {
+      "word": "wafer",
+      "category": "unusual"
+    },
+    {
+      "word": "grape",
+      "category": "familiar"
+    },
+    {
+      "word": "flies",
+      "category": "unusual"
+    },
+    {
+      "word": "exits",
+      "category": "unusual"
+    },
+    {
+      "word": "swizz",
+      "category": "unusual"
+    },
+    {
+      "word": "fusel",
+      "category": "unusual"
+    },
+    {
+      "word": "namma",
+      "category": "obscure"
+    },
+    {
+      "word": "rindy",
+      "category": "unusual"
+    },
+    {
+      "word": "soral",
+      "category": "unusual"
+    },
+    {
+      "word": "ethic",
+      "category": "unusual"
+    },
+    {
+      "word": "poopy",
+      "category": "unusual"
+    },
+    {
+      "word": "gogos",
+      "category": "unusual"
+    },
+    {
+      "word": "neese",
+      "category": "unusual"
+    },
+    {
+      "word": "umbre",
+      "category": "unusual"
+    },
+    {
+      "word": "flows",
+      "category": "common"
+    },
+    {
+      "word": "wowee",
+      "category": "unusual"
+    },
+    {
+      "word": "frees",
+      "category": "unusual"
+    },
+    {
+      "word": "treks",
+      "category": "unusual"
+    },
+    {
+      "word": "whoop",
+      "category": "unusual"
+    },
+    {
+      "word": "being",
+      "category": "unusual"
+    },
+    {
+      "word": "kippa",
+      "category": "unusual"
+    }
+  ]
+}
