@@ -26,12 +26,37 @@ export interface PuzzleSetup {
 export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
   const useSmallList = setup.wordListMode === "easy" || (setup.wordListMode === undefined && setup.useAnswerWordsForRows === true)
   const wordList = setup.wordListMode === "hard" ? ALLOWED_WORDS : ANSWER_WORDS
-  const target = choose(wordList, random)
   const guessWords = useSmallList ? ANSWER_WORDS : ALLOWED_WORDS
+  let wordsConsidered = 0
+
+  for (let attempt = 0; attempt < wordList.length; attempt += 1) {
+    const target = choose(wordList, random)
+    const result = createRows(target, guessWords, random, setup)
+    wordsConsidered += result.wordsConsidered + 1
+    if (result.rows === undefined) continue
+
+    return {
+      target,
+      wordsConsidered,
+      rows: result.rows.map(({ word, pattern }) => ({
+        intendedGuess: word,
+        pattern,
+      })),
+    }
+  }
+
+  throw new Error(`Could not create a puzzle with the current constraints after ${wordList.length} attempts`)
+}
+
+function createRows(
+  target: string,
+  guessWords: readonly string[],
+  random: () => number,
+  setup: PuzzleSetup,
+): { rows: Array<{ word: string; pattern: LetterResult[] }> | undefined; wordsConsidered: number } {
   const patterns = new Set<string>()
   const candidates: Array<{ word: string; pattern: LetterResult[] }> = []
-  let wordsConsidered = 1
-  let guesses: Array<{ word: string; pattern: LetterResult[] }> = []
+  let wordsConsidered = 0
 
   for (const word of shuffled(guessWords, random)) {
     wordsConsidered += 1
@@ -48,24 +73,14 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
     candidates.push({ word, pattern })
 
     if (candidates.length >= ROW_COUNT) {
-      guesses = chooseRows(candidates, setup)
-      if (meetsTileMinimums(guesses, setup.minGreenTiles ?? 0, setup.minYellowTiles ?? 0)) break
+      const guesses = chooseRows(candidates, setup)
+      if (meetsTileMinimums(guesses, setup.minGreenTiles ?? 0, setup.minYellowTiles ?? 0)) {
+        return { rows: guesses, wordsConsidered }
+      }
     }
   }
 
-  if (guesses.length === 0) guesses = chooseRows(candidates, setup)
-  if (guesses.length !== ROW_COUNT) {
-    throw new Error(`Could not create a puzzle with ${ROW_COUNT} rows`)
-  }
-
-  return {
-    target,
-    wordsConsidered,
-    rows: guesses.map(({ word, pattern }) => ({
-      intendedGuess: word,
-      pattern,
-    })),
-  }
+  return { rows: undefined, wordsConsidered }
 }
 
 function chooseRows(

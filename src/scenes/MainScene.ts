@@ -33,6 +33,8 @@ export class MainScene extends Phaser.Scene {
   private swapAnimating = false
   private movesTaken = 0
   private minimumMoves = 0
+  private puzzleCreationFailed = false
+  private devPanelReady = false
   private movesTakenText!: Phaser.GameObjects.Text
   private minimumMovesText!: Phaser.GameObjects.Text
   private requireTargetLetterInEachRow = false
@@ -66,19 +68,26 @@ export class MainScene extends Phaser.Scene {
     this.swapAnimating = false
     this.movesTaken = 0
     this.minimumMoves = 0
+    this.puzzleCreationFailed = false
+    this.devPanelReady = false
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
     this.minGreenTiles = clampTileMinimum(data.minGreenTiles ?? 4)
     this.minYellowTiles = clampTileMinimum(data.minYellowTiles ?? 4)
     this.wordListMode = data.wordListMode ?? "easy"
-    this.puzzle = createForewordPuzzle(Math.random, {
-      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      minGreenTiles: this.minGreenTiles,
-      minYellowTiles: this.minYellowTiles,
-      wordListMode: this.wordListMode,
-    })
+    try {
+      this.puzzle = createForewordPuzzle(Math.random, {
+        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+        minGreenTiles: this.minGreenTiles,
+        minYellowTiles: this.minYellowTiles,
+        wordListMode: this.wordListMode,
+      })
+    } catch {
+      this.puzzleCreationFailed = true
+      this.puzzle = { target: "", rows: [] }
+    }
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
     this.add.text(31, 70, "Reassemble the four words from one shared pool.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px" })
     const newPuzzle = this.add.text(398, 35, `NEW PUZZLE · ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
@@ -93,10 +102,15 @@ export class MainScene extends Phaser.Scene {
     devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
 
     this.add.text(31, 112, "TARGET", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", letterSpacing: 2 })
-    this.add.text(31, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
-    this.buildBoard()
+    this.add.text(31, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
+    if (this.puzzleCreationFailed) {
+      this.add.text(31, 235, "NO PUZZLE FOUND", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold" })
+      this.add.text(31, 265, "Try reducing the constraints in DEV.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 360 } })
+    } else {
+      this.buildBoard()
+    }
     this.buildMoveInfo()
-    this.message = this.add.text(31, 530, "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
+    this.message = this.add.text(31, 530, this.puzzleCreationFailed ? "No puzzle is available. Reduce the constraints in DEV, then close the panel." : "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
     this.buildInteractionTools()
     this.buildWordListModeTools()
     this.buildDevPanel()
@@ -137,6 +151,10 @@ export class MainScene extends Phaser.Scene {
 
   private performNextAlgorithmicSwap(): void {
     if (this.swapAnimating) return
+    if (this.puzzleCreationFailed) {
+      this.message.setText("No puzzle is available. Try reducing the constraints in DEV.")
+      return
+    }
     const next = findNextSwap(this.puzzle, this.tileSlots.map((visual) => visual.tile))
     if (next === undefined) {
       this.message.setText("The board is solved.")
@@ -226,6 +244,7 @@ export class MainScene extends Phaser.Scene {
     this.updateDevToggle()
     this.updateTileMinimumText()
     this.setDevPanelVisible(false)
+    this.devPanelReady = true
   }
 
   private adjustTileMinimum(color: "green" | "yellow", amount: number): void {
@@ -242,7 +261,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private setDevPanelVisible(visible: boolean): void {
-    if (!visible && this.devPanel.visible && !this.puzzleSatisfiesSetup(this.currentPuzzleSetup())) {
+    if (!visible && this.devPanelReady && this.devPanel.visible && (this.puzzleCreationFailed || !this.puzzleSatisfiesSetup(this.currentPuzzleSetup()))) {
       this.scene.restart(this.currentPuzzleSetup())
       return
     }
