@@ -11,6 +11,7 @@ export interface ForewordRow {
 export interface ForewordPuzzle {
   target: string
   rows: ForewordRow[]
+  wordsConsidered?: number
 }
 
 export interface PuzzleSetup {
@@ -29,8 +30,11 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
   const guessWords = useSmallList ? ANSWER_WORDS : ALLOWED_WORDS
   const patterns = new Set<string>()
   const candidates: Array<{ word: string; pattern: LetterResult[] }> = []
+  let wordsConsidered = 1
+  let guesses: Array<{ word: string; pattern: LetterResult[] }> = []
 
   for (const word of shuffled(guessWords, random)) {
+    wordsConsidered += 1
     if (word === target) continue
 
     const pattern = evaluateGuess(word, target)
@@ -42,15 +46,21 @@ export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = 
 
     patterns.add(signature)
     candidates.push({ word, pattern })
+
+    if (candidates.length >= ROW_COUNT) {
+      guesses = chooseRows(candidates, setup)
+      if (meetsTileMinimums(guesses, setup.minGreenTiles ?? 0, setup.minYellowTiles ?? 0)) break
+    }
   }
 
-  const guesses = chooseRows(candidates, setup)
+  if (guesses.length === 0) guesses = chooseRows(candidates, setup)
   if (guesses.length !== ROW_COUNT) {
     throw new Error(`Could not create a puzzle with ${ROW_COUNT} rows`)
   }
 
   return {
     target,
+    wordsConsidered,
     rows: guesses.map(({ word, pattern }) => ({
       intendedGuess: word,
       pattern,
