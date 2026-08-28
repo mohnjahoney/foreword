@@ -56,10 +56,10 @@ export class MainScene extends Phaser.Scene {
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
   private revealModeButton!: Phaser.GameObjects.Rectangle
-  private normalModeLabel!: Phaser.GameObjects.Text
-  private revealModeLabel!: Phaser.GameObjects.Text
-  private easyModeLabel!: Phaser.GameObjects.Text
-  private hardModeLabel!: Phaser.GameObjects.Text
+  private normalModeLabel!: Phaser.GameObjects.Container
+  private revealModeLabel!: Phaser.GameObjects.Container
+  private easyModeLabel!: Phaser.GameObjects.Container
+  private hardModeLabel!: Phaser.GameObjects.Container
   private modeLabelAnimating = false
   private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
   private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
@@ -102,14 +102,6 @@ export class MainScene extends Phaser.Scene {
       this.puzzle = { target: "", rows: [] }
     }
     this.add.text(30, 28, "4oreword", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
-    const newPuzzle = this.add.text(398, 35, `NEW PUZZLE · ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
-    newPuzzle.on("pointerdown", () => this.scene.restart({
-      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      minGreenTiles: this.minGreenTiles,
-      minYellowTiles: this.minYellowTiles,
-      wordListMode: this.wordListMode,
-    }))
     const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
     devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
 
@@ -124,19 +116,34 @@ export class MainScene extends Phaser.Scene {
     this.buildInteractionTools()
     this.buildWordListModeTools()
     this.buildDevPanel()
+    this.buildNewPuzzleButton()
+  }
+
+  private buildNewPuzzleButton(): void {
+    const button = this.add.rectangle(105, 708, 220, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(215, 727, `NEW PUZZLE  ·  ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    button.on("pointerdown", () => this.scene.restart({
+      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+      minGreenTiles: this.minGreenTiles,
+      minYellowTiles: this.minYellowTiles,
+      wordListMode: this.wordListMode,
+    }))
   }
 
   private buildMoveInfo(): void {
-    const resetButton = this.add.rectangle(290, 545, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(344, 562, "RESET", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    resetButton.on("pointerdown", () => this.resetPuzzle())
-    const nextButton = this.add.rectangle(290, 605, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(344, 622, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.add.rectangle(285, 535, 115, 140, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+    const nextButton = this.add.rectangle(295, 545, 95, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const nextIcon = this.add.graphics().setDepth(1)
+    nextIcon.lineStyle(3, 0x211f1a, 1).strokeLineShape(new Phaser.Geom.Line(326, 562, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 554, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 570, 356, 562))
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    this.add.text(330, 650, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.add.text(330, 675, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.movesTakenText = this.add.text(398, 650, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
-    this.minimumMovesText = this.add.text(398, 675, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    const resetButton = this.add.rectangle(31, 650, 105, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(83, 667, "RESET", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    resetButton.on("pointerdown", () => this.resetPuzzle())
+    this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
     this.updateMoveInfo()
   }
 
@@ -147,12 +154,12 @@ export class MainScene extends Phaser.Scene {
 
   private buildInteractionTools(): void {
     const normalX = 31
-    const revealX = 182
+    const revealX = 162
     const y = 545
     this.normalModeButton = this.add.rectangle(normalX, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.revealModeButton = this.add.rectangle(revealX, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.normalModeLabel = this.add.text(normalX + 60, y + 19, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.revealModeLabel = this.add.text(revealX + 60, y + 19, "REVEAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.normalModeLabel = createIconLabel(this, normalX + 60, y + 19, "NORMAL", "swap")
+    this.revealModeLabel = createIconLabel(this, revealX + 60, y + 19, "REVEAL", "reveal")
     this.normalModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.revealModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.setInteractionMode("swap", false)
@@ -176,8 +183,8 @@ export class MainScene extends Phaser.Scene {
     const hardButton = this.add.rectangle(162, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const easyX = this.wordListMode === "easy" ? 91 : 222
     const hardX = this.wordListMode === "easy" ? 222 : 91
-    this.easyModeLabel = this.add.text(easyX, y + 19, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.hardModeLabel = this.add.text(hardX, y + 19, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.easyModeLabel = createIconLabel(this, easyX, y + 19, "EASY", "easy")
+    this.hardModeLabel = createIconLabel(this, hardX, y + 19, "HARD", "hard")
     easyButton.on("pointerdown", () => this.toggleWordListMode())
     hardButton.on("pointerdown", () => this.toggleWordListMode())
   }
@@ -217,8 +224,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private animateLabelExchange(
-    first: Phaser.GameObjects.Text,
-    second: Phaser.GameObjects.Text,
+    first: Phaser.GameObjects.Container,
+    second: Phaser.GameObjects.Container,
     onComplete?: () => void,
   ): void {
     const firstPosition = { x: first.x, y: first.y }
@@ -584,4 +591,39 @@ function patternsMatch(
 
 function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
+}
+
+type IconKind = "swap" | "reveal" | "easy" | "hard"
+
+function createIconLabel(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  label: string,
+  kind: IconKind,
+): Phaser.GameObjects.Container {
+  const container = scene.add.container(x, y).setDepth(1)
+  const icon = scene.add.graphics()
+  icon.lineStyle(2, 0x211f1a, 1)
+
+  if (kind === "swap") {
+    icon.strokeRect(-43, -7, 12, 14).strokeRect(-23, -7, 12, 14)
+    icon.strokeLineShape(new Phaser.Geom.Line(-27, 0, -17, 0))
+    icon.strokeLineShape(new Phaser.Geom.Line(-20, -4, -16, 0)).strokeLineShape(new Phaser.Geom.Line(-20, 4, -16, 0))
+    icon.strokeLineShape(new Phaser.Geom.Line(-16, 0, -6, 0))
+    icon.strokeLineShape(new Phaser.Geom.Line(-10, -4, -6, 0)).strokeLineShape(new Phaser.Geom.Line(-10, 4, -6, 0))
+  } else if (kind === "reveal") {
+    icon.strokeEllipse(-27, 0, 28, 16)
+    icon.fillStyle(0x211f1a, 1).fillCircle(-27, 0, 4)
+  } else if (kind === "easy") {
+    icon.strokeLineShape(new Phaser.Geom.Line(-33, 7, -24, -7)).strokeLineShape(new Phaser.Geom.Line(-24, -7, -15, 7))
+    icon.strokeLineShape(new Phaser.Geom.Line(-30, 2, -19, 2))
+  } else {
+    icon.strokeLineShape(new Phaser.Geom.Line(-34, 7, -24, -7)).strokeLineShape(new Phaser.Geom.Line(-24, -7, -14, 7))
+    icon.strokeLineShape(new Phaser.Geom.Line(-30, 2, -18, 2)).strokeLineShape(new Phaser.Geom.Line(-28, 5, -16, 5))
+  }
+
+  const text = scene.add.text(15, 0, label, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
+  container.add([icon, text])
+  return container
 }
