@@ -26,6 +26,7 @@ type WordListMode = "easy" | "hard"
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
   private tileSlots: TileVisual[] = []
+  private initialTileIds: number[] = []
   private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
   private tileOutlines: Phaser.GameObjects.Rectangle[] = []
   private selectedSlot: number | undefined
@@ -71,6 +72,7 @@ export class MainScene extends Phaser.Scene {
   create(data: SceneData = {}): void {
     configureLogicalCamera(this)
     this.tileSlots = []
+    this.initialTileIds = []
     this.slotBackgrounds = []
     this.tileOutlines = []
     this.rowOutlines = []
@@ -125,6 +127,9 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
+    const resetButton = this.add.rectangle(290, 545, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(344, 562, "RESET", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    resetButton.on("pointerdown", () => this.resetPuzzle())
     const nextButton = this.add.rectangle(290, 605, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.add.text(344, 622, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
@@ -359,6 +364,7 @@ export class MainScene extends Phaser.Scene {
 
   private buildBoard(): void {
     const board = createScrambledBoard(this.puzzle)
+    this.initialTileIds = board.tiles.map((tile) => tile.id)
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     this.puzzle.rows.forEach((row, rowIndex) => {
       const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
@@ -379,6 +385,24 @@ export class MainScene extends Phaser.Scene {
       })
     })
     this.updateLetterFeedback()
+  }
+
+  private resetPuzzle(): void {
+    if (this.swapAnimating || this.puzzleCreationFailed) return
+    const visualsById = new Map(this.tileSlots.map((visual) => [visual.tile.id, visual]))
+    const resetSlots = this.initialTileIds.map((id) => visualsById.get(id))
+    if (resetSlots.some((visual) => visual === undefined)) return
+
+    this.tileSlots = resetSlots as TileVisual[]
+    this.tileSlots.forEach((visual, slotIndex) => {
+      const center = this.slotCenter(slotIndex)
+      visual.text.setPosition(center.x, center.y).setDepth(10)
+    })
+    this.movesTaken = 0
+    this.selectedSlot = undefined
+    this.updateMoveInfo()
+    this.updateSelection()
+    this.updateRowFeedback()
   }
 
   private selectTile(slotIndex: number): void {
