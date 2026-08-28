@@ -60,6 +60,9 @@ export class MainScene extends Phaser.Scene {
   private easyModeLabel!: Phaser.GameObjects.Text
   private hardModeLabel!: Phaser.GameObjects.Text
   private modeLabelAnimating = false
+  private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
+  private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
+  private static readonly BUTTON_STROKE_COLOR = 0x756d5e
 
   constructor() {
     super("main")
@@ -123,6 +126,9 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
+    const nextButton = this.add.rectangle(290, 650, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(344, 667, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
     this.add.text(330, 690, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
     this.add.text(330, 715, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
     this.movesTakenText = this.add.text(398, 690, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
@@ -138,19 +144,14 @@ export class MainScene extends Phaser.Scene {
   private buildInteractionTools(): void {
     const normalX = 31
     const revealX = 182
-    const nextX = 342
     const y = 590
-    this.normalModeButton = this.add.rectangle(normalX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.revealModeButton = this.add.rectangle(revealX, y, 152, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    const nextSwapButton = this.add.rectangle(nextX, y, 72, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.normalModeLabel = this.add.text(normalX + 69, y + 21, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.revealModeLabel = this.add.text(revealX + 76, y + 21, "REVEAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    const nextSwapLabel = this.add.text(nextX + 36, y + 21, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
+    this.normalModeButton = this.add.rectangle(normalX, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.revealModeButton = this.add.rectangle(revealX, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.normalModeLabel = this.add.text(normalX + 60, y + 19, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.revealModeLabel = this.add.text(revealX + 60, y + 19, "REVEAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
     this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
-    nextSwapButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
     this.setInteractionMode("swap", false)
-    nextSwapLabel.setDepth(1)
   }
 
   private performNextAlgorithmicSwap(): void {
@@ -170,12 +171,12 @@ export class MainScene extends Phaser.Scene {
 
   private buildWordListModeTools(): void {
     const y = 650
-    const easyButton = this.add.rectangle(31, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    const hardButton = this.add.rectangle(151, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    const easyX = this.wordListMode === "easy" ? 83 : 203
-    const hardX = this.wordListMode === "easy" ? 203 : 83
-    this.easyModeLabel = this.add.text(easyX, y + 17, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.hardModeLabel = this.add.text(hardX, y + 17, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    const easyButton = this.add.rectangle(31, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const hardButton = this.add.rectangle(162, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const easyX = this.wordListMode === "easy" ? 91 : 222
+    const hardX = this.wordListMode === "easy" ? 222 : 91
+    this.easyModeLabel = this.add.text(easyX, y + 19, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.hardModeLabel = this.add.text(hardX, y + 19, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     easyButton.on("pointerdown", () => this.setWordListMode("easy"))
     hardButton.on("pointerdown", () => this.setWordListMode("hard"))
   }
