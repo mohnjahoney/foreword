@@ -147,8 +147,8 @@ export class MainScene extends Phaser.Scene {
     this.revealModeButton = this.add.rectangle(revealX, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.normalModeLabel = this.add.text(normalX + 60, y + 19, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     this.revealModeLabel = this.add.text(revealX + 60, y + 19, "REVEAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
-    this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
+    this.normalModeButton.on("pointerdown", () => this.toggleInteractionMode())
+    this.revealModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.setInteractionMode("swap", false)
   }
 
@@ -172,8 +172,8 @@ export class MainScene extends Phaser.Scene {
     const hardX = this.wordListMode === "easy" ? 222 : 91
     this.easyModeLabel = this.add.text(easyX, y + 19, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     this.hardModeLabel = this.add.text(hardX, y + 19, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    easyButton.on("pointerdown", () => this.setWordListMode("easy"))
-    hardButton.on("pointerdown", () => this.setWordListMode("hard"))
+    easyButton.on("pointerdown", () => this.toggleWordListMode())
+    hardButton.on("pointerdown", () => this.toggleWordListMode())
   }
 
   private setWordListMode(mode: WordListMode): void {
@@ -192,6 +192,10 @@ export class MainScene extends Phaser.Scene {
     })
   }
 
+  private toggleWordListMode(): void {
+    this.setWordListMode(this.wordListMode === "easy" ? "hard" : "easy")
+  }
+
   private setInteractionMode(mode: InteractionMode, animate = true): void {
     if (mode === this.interactionMode && animate) return
     const shouldAnimate = animate && mode !== this.interactionMode
@@ -200,6 +204,10 @@ export class MainScene extends Phaser.Scene {
       this.modeLabelAnimating = true
       this.animateLabelExchange(this.normalModeLabel, this.revealModeLabel)
     }
+  }
+
+  private toggleInteractionMode(): void {
+    this.setInteractionMode(this.interactionMode === "swap" ? "reveal" : "swap")
   }
 
   private animateLabelExchange(
