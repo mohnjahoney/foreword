@@ -28,7 +28,6 @@ export class MainScene extends Phaser.Scene {
   private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
   private tileOutlines: Phaser.GameObjects.Rectangle[] = []
   private selectedSlot: number | undefined
-  private message!: Phaser.GameObjects.Text
   private rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private swapDirection = 1
   private swapAnimating = false
@@ -119,20 +118,19 @@ export class MainScene extends Phaser.Scene {
       this.buildBoard()
     }
     this.buildMoveInfo()
-    this.message = this.add.text(31, 530, this.puzzleCreationFailed ? "No puzzle is available. Reduce the constraints in PUZZLE SETUP, then close the panel." : "", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
     this.buildInteractionTools()
     this.buildWordListModeTools()
     this.buildDevPanel()
   }
 
   private buildMoveInfo(): void {
-    const nextButton = this.add.rectangle(290, 650, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(344, 667, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    const nextButton = this.add.rectangle(290, 605, 108, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(344, 622, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    this.add.text(330, 690, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.add.text(330, 715, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.movesTakenText = this.add.text(398, 690, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
-    this.minimumMovesText = this.add.text(398, 715, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.add.text(330, 650, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.add.text(330, 675, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.movesTakenText = this.add.text(398, 650, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.minimumMovesText = this.add.text(398, 675, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
     this.updateMoveInfo()
   }
 
@@ -144,7 +142,7 @@ export class MainScene extends Phaser.Scene {
   private buildInteractionTools(): void {
     const normalX = 31
     const revealX = 182
-    const y = 590
+    const y = 545
     this.normalModeButton = this.add.rectangle(normalX, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.revealModeButton = this.add.rectangle(revealX, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.normalModeLabel = this.add.text(normalX + 60, y + 19, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
@@ -157,20 +155,17 @@ export class MainScene extends Phaser.Scene {
   private performNextAlgorithmicSwap(): void {
     if (this.swapAnimating) return
     if (this.puzzleCreationFailed) {
-      this.message.setText("No puzzle is available. Try reducing the constraints in DEV.")
       return
     }
     const next = findNextSwap(this.puzzle, this.tileSlots.map((visual) => visual.tile))
     if (next === undefined) {
-      this.message.setText("The board is solved.")
       return
     }
     this.swapTiles(next.firstSlot, next.secondSlot)
-    this.message.setText(`Suggested swap: ${next.improvement === 2 ? "two tiles" : "one tile"} correct.`)
   }
 
   private buildWordListModeTools(): void {
-    const y = 650
+    const y = 605
     const easyButton = this.add.rectangle(31, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const hardButton = this.add.rectangle(162, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const easyX = this.wordListMode === "easy" ? 91 : 222
@@ -407,7 +402,6 @@ export class MainScene extends Phaser.Scene {
     this.movesTaken += 1
     this.updateMoveInfo()
     this.animateExchange(first, second, firstSlot, secondSlot)
-    this.message.setText("Letters swapped. Keep going.")
     this.updateRowFeedback()
   }
 
@@ -419,18 +413,15 @@ export class MainScene extends Phaser.Scene {
     const current = this.tileSlots[slotIndex]
     if (expectedLetter === undefined || current === undefined) return
     if (current.tile.letter === expectedLetter) {
-      this.message.setText("That letter is already in the right place.")
       return
     }
 
     const sourceSlot = this.tileSlots.findIndex((visual, index) => visual.tile.letter === expectedLetter && index !== slotIndex && !this.isLetterCorrectAtSlot(index))
     if (sourceSlot < 0) {
-      this.message.setText("I couldn't find that letter to reveal it.")
       return
     }
 
     this.swapTiles(slotIndex, sourceSlot)
-    this.message.setText("Letter revealed. Keep going.")
   }
 
   private isLetterCorrectAtSlot(slotIndex: number): boolean {
@@ -439,6 +430,15 @@ export class MainScene extends Phaser.Scene {
     const row = this.puzzle.rows[rowIndex]
     const visual = this.tileSlots[slotIndex]
     return row !== undefined && visual !== undefined && visual.tile.letter === row.intendedGuess[columnIndex]
+  }
+
+  private isRowCorrect(rowIndex: number): boolean {
+    const row = this.puzzle.rows[rowIndex]
+    if (row === undefined) return false
+    return this.tileSlots
+      .slice(rowIndex * 5, (rowIndex + 1) * 5)
+      .map((visual) => visual.tile.letter)
+      .join("") === row.intendedGuess
   }
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
@@ -507,7 +507,9 @@ export class MainScene extends Phaser.Scene {
 
   private updateLetterFeedback(): void {
     this.tileOutlines.forEach((outline, slotIndex) => {
-      outline.setStrokeStyle(this.isLetterCorrectAtSlot(slotIndex) ? 4 : 0, 0x4c7b43)
+      const rowIndex = Math.floor(slotIndex / 5)
+      const showIndividualOutline = !this.isRowCorrect(rowIndex) && this.isLetterCorrectAtSlot(slotIndex)
+      outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x4c7b43)
     })
   }
 
