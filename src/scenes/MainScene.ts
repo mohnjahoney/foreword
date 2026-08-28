@@ -133,12 +133,12 @@ export class MainScene extends Phaser.Scene {
 
   private buildMoveInfo(): void {
     this.add.rectangle(285, 535, 115, 140, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
-    const nextButton = this.add.rectangle(295, 545, 95, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const nextButton = this.add.rectangle(295, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const nextIcon = this.add.graphics().setDepth(1)
-    nextIcon.lineStyle(3, 0x211f1a, 1).strokeLineShape(new Phaser.Geom.Line(326, 562, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 554, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 570, 356, 562))
+    nextIcon.lineStyle(3, 0x211f1a, 1).strokeLineShape(new Phaser.Geom.Line(305, 562, 330, 562)).strokeLineShape(new Phaser.Geom.Line(322, 555, 330, 562)).strokeLineShape(new Phaser.Geom.Line(322, 569, 330, 562))
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    const resetButton = this.add.rectangle(31, 650, 72, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    createIconLabel(this, 67, 667, "reset")
+    const resetButton = this.add.rectangle(345, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    createIconLabel(this, 367, 562, "reset")
     resetButton.on("pointerdown", () => this.resetPuzzle())
     this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
     this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
