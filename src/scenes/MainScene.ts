@@ -137,8 +137,8 @@ export class MainScene extends Phaser.Scene {
     const nextIcon = this.add.graphics().setDepth(1)
     nextIcon.lineStyle(3, 0x211f1a, 1).strokeLineShape(new Phaser.Geom.Line(326, 562, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 554, 356, 562)).strokeLineShape(new Phaser.Geom.Line(348, 570, 356, 562))
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    const resetButton = this.add.rectangle(31, 650, 105, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(83, 667, "RESET", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    const resetButton = this.add.rectangle(31, 650, 72, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    createIconLabel(this, 67, 667, "reset")
     resetButton.on("pointerdown", () => this.resetPuzzle())
     this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
     this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
@@ -154,12 +154,12 @@ export class MainScene extends Phaser.Scene {
 
   private buildInteractionTools(): void {
     const normalX = 31
-    const revealX = 162
+    const revealX = 112
     const y = 545
-    this.normalModeButton = this.add.rectangle(normalX, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.revealModeButton = this.add.rectangle(revealX, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.normalModeLabel = createIconLabel(this, normalX + 60, y + 19, "NORMAL", "swap")
-    this.revealModeLabel = createIconLabel(this, revealX + 60, y + 19, "REVEAL", "reveal")
+    this.normalModeButton = this.add.rectangle(normalX, y, 72, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.revealModeButton = this.add.rectangle(revealX, y, 72, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.normalModeLabel = createIconLabel(this, normalX + 36, y + 19, "swap")
+    this.revealModeLabel = createIconLabel(this, revealX + 36, y + 19, "reveal")
     this.normalModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.revealModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.setInteractionMode("swap", false)
@@ -179,12 +179,12 @@ export class MainScene extends Phaser.Scene {
 
   private buildWordListModeTools(): void {
     const y = 605
-    const easyButton = this.add.rectangle(31, y, 120, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const hardButton = this.add.rectangle(162, y, 120, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const easyX = this.wordListMode === "easy" ? 91 : 222
-    const hardX = this.wordListMode === "easy" ? 222 : 91
-    this.easyModeLabel = createIconLabel(this, easyX, y + 19, "EASY", "easy")
-    this.hardModeLabel = createIconLabel(this, hardX, y + 19, "HARD", "hard")
+    const easyButton = this.add.rectangle(31, y, 72, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const hardButton = this.add.rectangle(112, y, 72, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const easyX = this.wordListMode === "easy" ? 67 : 148
+    const hardX = this.wordListMode === "easy" ? 148 : 67
+    this.easyModeLabel = createIconLabel(this, easyX, y + 19, "easy")
+    this.hardModeLabel = createIconLabel(this, hardX, y + 19, "hard")
     easyButton.on("pointerdown", () => this.toggleWordListMode())
     hardButton.on("pointerdown", () => this.toggleWordListMode())
   }
@@ -593,37 +593,41 @@ function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
 }
 
-type IconKind = "swap" | "reveal" | "easy" | "hard"
+type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
 
 function createIconLabel(
   scene: Phaser.Scene,
   x: number,
   y: number,
-  label: string,
   kind: IconKind,
 ): Phaser.GameObjects.Container {
   const container = scene.add.container(x, y).setDepth(1)
   const icon = scene.add.graphics()
-  icon.lineStyle(2, 0x211f1a, 1)
+  icon.lineStyle(2.2, 0x211f1a, 1)
 
   if (kind === "swap") {
-    icon.strokeRect(-43, -7, 12, 14).strokeRect(-23, -7, 12, 14)
-    icon.strokeLineShape(new Phaser.Geom.Line(-27, 0, -17, 0))
-    icon.strokeLineShape(new Phaser.Geom.Line(-20, -4, -16, 0)).strokeLineShape(new Phaser.Geom.Line(-20, 4, -16, 0))
-    icon.strokeLineShape(new Phaser.Geom.Line(-16, 0, -6, 0))
-    icon.strokeLineShape(new Phaser.Geom.Line(-10, -4, -6, 0)).strokeLineShape(new Phaser.Geom.Line(-10, 4, -6, 0))
+    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-29, -9, 15, 18, 2).fillRoundedRect(14, -9, 15, 18, 2)
+    icon.strokeRoundedRect(-29, -9, 15, 18, 2).strokeRoundedRect(14, -9, 15, 18, 2)
+    icon.strokeLineShape(new Phaser.Geom.Line(-10, -3, 10, -3)).strokeLineShape(new Phaser.Geom.Line(-10, 3, 10, 3))
+    icon.strokeLineShape(new Phaser.Geom.Line(6, -7, 12, -3)).strokeLineShape(new Phaser.Geom.Line(6, 1, 12, -3))
+    icon.strokeLineShape(new Phaser.Geom.Line(-6, 7, -12, 3)).strokeLineShape(new Phaser.Geom.Line(-6, -1, -12, 3))
   } else if (kind === "reveal") {
-    icon.strokeEllipse(-27, 0, 28, 16)
-    icon.fillStyle(0x211f1a, 1).fillCircle(-27, 0, 4)
+    icon.strokeEllipse(0, 0, 38, 22)
+    icon.fillStyle(0x211f1a, 1).fillCircle(0, 0, 5)
+    icon.fillStyle(0xfaf6e9, 1).fillCircle(0, 0, 2)
   } else if (kind === "easy") {
-    icon.strokeLineShape(new Phaser.Geom.Line(-33, 7, -24, -7)).strokeLineShape(new Phaser.Geom.Line(-24, -7, -15, 7))
-    icon.strokeLineShape(new Phaser.Geom.Line(-30, 2, -19, 2))
+    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-10, -10, 20, 20, 3)
+    icon.strokeRoundedRect(-10, -10, 20, 20, 3)
+    icon.fillStyle(0x71845f, 1).fillCircle(0, 0, 4)
+  } else if (kind === "hard") {
+    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-14, -12, 20, 7, 2).fillRoundedRect(-9, -2, 20, 7, 2).fillRoundedRect(-4, 8, 20, 7, 2)
+    icon.strokeRoundedRect(-14, -12, 20, 7, 2).strokeRoundedRect(-9, -2, 20, 7, 2).strokeRoundedRect(-4, 8, 20, 7, 2)
   } else {
-    icon.strokeLineShape(new Phaser.Geom.Line(-34, 7, -24, -7)).strokeLineShape(new Phaser.Geom.Line(-24, -7, -14, 7))
-    icon.strokeLineShape(new Phaser.Geom.Line(-30, 2, -18, 2)).strokeLineShape(new Phaser.Geom.Line(-28, 5, -16, 5))
+    icon.arc(0, 0, 11, Phaser.Math.DegToRad(45), Phaser.Math.DegToRad(320), false)
+    icon.strokePath()
+    icon.strokeLineShape(new Phaser.Geom.Line(8, -8, 12, -1)).strokeLineShape(new Phaser.Geom.Line(8, -8, 1, -7))
   }
 
-  const text = scene.add.text(15, 0, label, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
-  container.add([icon, text])
+  container.add(icon)
   return container
 }
