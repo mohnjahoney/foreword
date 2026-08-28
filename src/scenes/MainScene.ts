@@ -506,7 +506,7 @@ export class MainScene extends Phaser.Scene {
       const outline = this.rowOutlines[rowIndex]
       if (outline === undefined) return
       if (word === row.intendedGuess) {
-        outline.setStrokeStyle(4, 0x4c7b43)
+        outline.setStrokeStyle(4, 0x8FAF83)
       } else if (isAllowedWord(word) && patternsMatch(evaluateGuess(word, this.puzzle.target), row.pattern)) {
         outline.setStrokeStyle(4, 0xc49f52)
       } else {
