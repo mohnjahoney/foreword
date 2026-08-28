@@ -53,7 +53,8 @@ export class MainScene extends Phaser.Scene {
   private devCountButtons: Phaser.GameObjects.Text[] = []
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
-  private revealModeButton!: Phaser.GameObjects.Rectangle
+  private interactionModeLabel!: Phaser.GameObjects.Text
+  private wordListModeLabel!: Phaser.GameObjects.Text
 
   constructor() {
     super("main")
@@ -89,7 +90,6 @@ export class MainScene extends Phaser.Scene {
       this.puzzle = { target: "", rows: [] }
     }
     this.add.text(30, 28, "FOREWORD", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
-    this.add.text(31, 70, "Reassemble the four words from one shared pool.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px" })
     const newPuzzle = this.add.text(398, 35, `NEW PUZZLE · ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
     newPuzzle.on("pointerdown", () => this.scene.restart({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
@@ -98,11 +98,10 @@ export class MainScene extends Phaser.Scene {
       minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
     }))
-    const devButton = this.add.text(398, 66, "DEV", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
+    const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
     devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
 
-    this.add.text(31, 112, "TARGET", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", letterSpacing: 2 })
-    this.add.text(31, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" })
+    this.add.text(230, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }).setOrigin(0.5)
     if (this.puzzleCreationFailed) {
       this.add.text(31, 235, "NO PUZZLE FOUND", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold" })
       this.add.text(31, 265, "Try reducing the constraints in DEV.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 360 } })
@@ -110,17 +109,17 @@ export class MainScene extends Phaser.Scene {
       this.buildBoard()
     }
     this.buildMoveInfo()
-    this.message = this.add.text(31, 530, this.puzzleCreationFailed ? "No puzzle is available. Reduce the constraints in DEV, then close the panel." : "Tap two letters to swap them.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
+    this.message = this.add.text(31, 530, this.puzzleCreationFailed ? "No puzzle is available. Reduce the constraints in PUZZLE SETUP, then close the panel." : "", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 365 } })
     this.buildInteractionTools()
     this.buildWordListModeTools()
     this.buildDevPanel()
   }
 
   private buildMoveInfo(): void {
-    this.add.text(330, 108, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.add.text(330, 125, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.movesTakenText = this.add.text(398, 108, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
-    this.minimumMovesText = this.add.text(398, 125, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.add.text(330, 690, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.add.text(330, 715, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
+    this.movesTakenText = this.add.text(398, 690, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.minimumMovesText = this.add.text(398, 715, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
     this.updateMoveInfo()
   }
 
@@ -130,22 +129,17 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildInteractionTools(): void {
-    const normalX = 31
-    const revealX = 182
-    const nextX = 342
+    const modeX = 31
+    const nextX = 190
     const y = 590
-    this.normalModeButton = this.add.rectangle(normalX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.revealModeButton = this.add.rectangle(revealX, y, 152, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.normalModeButton = this.add.rectangle(modeX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
     const nextSwapButton = this.add.rectangle(nextX, y, 72, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    const normalLabel = this.add.text(normalX + 69, y + 21, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
-    const revealLabel = this.add.text(revealX + 76, y + 21, "REVEAL TOOL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
+    this.interactionModeLabel = this.add.text(modeX + 69, y + 21, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
     const nextSwapLabel = this.add.text(nextX + 36, y + 21, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
-    this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
-    this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
+    this.normalModeButton.on("pointerdown", () => this.setInteractionMode(this.interactionMode === "swap" ? "reveal" : "swap"))
     nextSwapButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
     this.setInteractionMode("swap")
-    normalLabel.setDepth(1)
-    revealLabel.setDepth(1)
+    this.interactionModeLabel.setDepth(1)
     nextSwapLabel.setDepth(1)
   }
 
@@ -166,18 +160,11 @@ export class MainScene extends Phaser.Scene {
 
   private buildWordListModeTools(): void {
     const y = 650
-    const easyButton = this.add.rectangle(31, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    const hardButton = this.add.rectangle(182, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.add.text(100, y + 21, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    this.add.text(251, y + 21, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    easyButton.on("pointerdown", () => this.setWordListMode("easy"))
-    hardButton.on("pointerdown", () => this.setWordListMode("hard"))
-    const updateButtons = (): void => {
-      easyButton.setFillStyle(this.wordListMode === "easy" ? 0x71845f : 0xc6bdae)
-      hardButton.setFillStyle(this.wordListMode === "hard" ? 0x71845f : 0xc6bdae)
-    }
-    this.setWordListModeButtons = updateButtons
-    updateButtons()
+    const modeButton = this.add.rectangle(31, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.wordListModeLabel = this.add.text(83, y + 17, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    modeButton.on("pointerdown", () => this.setWordListMode(this.wordListMode === "easy" ? "hard" : "easy"))
+    this.setWordListModeButtons = () => this.wordListModeLabel.setText(this.wordListMode.toUpperCase())
+    this.setWordListModeButtons()
   }
 
   private setWordListModeButtons: (() => void) | undefined
@@ -197,11 +184,7 @@ export class MainScene extends Phaser.Scene {
 
   private setInteractionMode(mode: InteractionMode): void {
     this.interactionMode = mode
-    this.normalModeButton?.setFillStyle(mode === "swap" ? 0x71845f : 0xc6bdae)
-    this.revealModeButton?.setFillStyle(mode === "reveal" ? 0x71845f : 0xc6bdae)
-    if (this.message !== undefined) {
-      this.message.setText(mode === "swap" ? "Tap two letters to swap them." : "Tap a square to reveal its letter.")
-    }
+    this.interactionModeLabel?.setText(mode === "swap" ? "↔  NORMAL" : "REVEAL")
   }
 
   private buildDevPanel(): void {
@@ -317,7 +300,6 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     this.puzzle.rows.forEach((row, rowIndex) => {
       const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
-      this.add.text(31, y + 14, `${rowIndex + 1}`, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold" })
       this.rowOutlines.push(this.add.rectangle(ROW_LEFT - 7, y - 7, 5 * CELL_SIZE + 4 * CELL_GAP + 14, CELL_SIZE + 14).setOrigin(0, 0).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
