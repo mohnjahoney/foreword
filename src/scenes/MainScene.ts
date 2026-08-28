@@ -22,6 +22,9 @@ interface TileVisual {
 interface SceneData extends PuzzleSetup {}
 type InteractionMode = "swap" | "reveal"
 type WordListMode = "easy" | "hard"
+type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
+
+const ICON_KEYS = ["replace", "eye", "square", "layers-3", "rotate-ccw", "arrow-right"] as const
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: ForewordPuzzle
@@ -67,6 +70,12 @@ export class MainScene extends Phaser.Scene {
 
   constructor() {
     super("main")
+  }
+
+  preload(): void {
+    for (const icon of ICON_KEYS) {
+      this.load.svg(`foreword-${icon}`, `${import.meta.env.BASE_URL}icons/${icon}.svg`, { width: 48, height: 48 })
+    }
   }
 
   create(data: SceneData = {}): void {
@@ -134,8 +143,7 @@ export class MainScene extends Phaser.Scene {
   private buildMoveInfo(): void {
     this.add.rectangle(285, 535, 115, 140, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
     const nextButton = this.add.rectangle(295, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const nextIcon = this.add.graphics().setDepth(1)
-    nextIcon.lineStyle(3, 0x211f1a, 1).strokeLineShape(new Phaser.Geom.Line(305, 562, 330, 562)).strokeLineShape(new Phaser.Geom.Line(322, 555, 330, 562)).strokeLineShape(new Phaser.Geom.Line(322, 569, 330, 562))
+    this.add.image(317, 562, "foreword-arrow-right").setDisplaySize(25, 25).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
     const resetButton = this.add.rectangle(345, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     createIconLabel(this, 367, 562, "reset")
@@ -593,8 +601,6 @@ function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
 }
 
-type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
-
 function createIconLabel(
   scene: Phaser.Scene,
   x: number,
@@ -602,32 +608,13 @@ function createIconLabel(
   kind: IconKind,
 ): Phaser.GameObjects.Container {
   const container = scene.add.container(x, y).setDepth(1)
-  const icon = scene.add.graphics()
-  icon.lineStyle(2.2, 0x211f1a, 1)
-
-  if (kind === "swap") {
-    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-29, -9, 15, 18, 2).fillRoundedRect(14, -9, 15, 18, 2)
-    icon.strokeRoundedRect(-29, -9, 15, 18, 2).strokeRoundedRect(14, -9, 15, 18, 2)
-    icon.strokeLineShape(new Phaser.Geom.Line(-10, -3, 10, -3)).strokeLineShape(new Phaser.Geom.Line(-10, 3, 10, 3))
-    icon.strokeLineShape(new Phaser.Geom.Line(6, -7, 12, -3)).strokeLineShape(new Phaser.Geom.Line(6, 1, 12, -3))
-    icon.strokeLineShape(new Phaser.Geom.Line(-6, 7, -12, 3)).strokeLineShape(new Phaser.Geom.Line(-6, -1, -12, 3))
-  } else if (kind === "reveal") {
-    icon.strokeEllipse(0, 0, 38, 22)
-    icon.fillStyle(0x211f1a, 1).fillCircle(0, 0, 5)
-    icon.fillStyle(0xfaf6e9, 1).fillCircle(0, 0, 2)
-  } else if (kind === "easy") {
-    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-10, -10, 20, 20, 3)
-    icon.strokeRoundedRect(-10, -10, 20, 20, 3)
-    icon.fillStyle(0x71845f, 1).fillCircle(0, 0, 4)
-  } else if (kind === "hard") {
-    icon.fillStyle(0xfaf6e9, 1).fillRoundedRect(-14, -12, 20, 7, 2).fillRoundedRect(-9, -2, 20, 7, 2).fillRoundedRect(-4, 8, 20, 7, 2)
-    icon.strokeRoundedRect(-14, -12, 20, 7, 2).strokeRoundedRect(-9, -2, 20, 7, 2).strokeRoundedRect(-4, 8, 20, 7, 2)
-  } else {
-    icon.arc(0, 0, 11, Phaser.Math.DegToRad(45), Phaser.Math.DegToRad(320), false)
-    icon.strokePath()
-    icon.strokeLineShape(new Phaser.Geom.Line(8, -8, 12, -1)).strokeLineShape(new Phaser.Geom.Line(8, -8, 1, -7))
-  }
-
-  container.add(icon)
+  const assetName = {
+    swap: "replace",
+    reveal: "eye",
+    easy: "square",
+    hard: "layers-3",
+    reset: "rotate-ccw",
+  }[kind]
+  container.add(scene.add.image(0, 0, `foreword-${assetName}`).setDisplaySize(30, 30))
   return container
 }
