@@ -12,6 +12,7 @@ const CELL_SIZE = 52
 const CELL_GAP = 7
 const ROW_LEFT = 75
 const ROW_TOP = 175
+const OUTLINE_SIZE = CELL_SIZE + 5
 
 interface TileVisual {
   tile: LetterTile
@@ -361,18 +362,19 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     this.puzzle.rows.forEach((row, rowIndex) => {
       const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
-      this.rowOutlines.push(this.add.rectangle(ROW_LEFT - 7, y - 7, 5 * CELL_SIZE + 4 * CELL_GAP + 14, CELL_SIZE + 14).setOrigin(0, 0).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
+      const rowWidth = 5 * CELL_SIZE + 4 * CELL_GAP + 14
+      this.rowOutlines.push(this.add.rectangle(ROW_LEFT - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + 14) / 2, rowWidth, CELL_SIZE + 14).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
-        const x = ROW_LEFT + index * (CELL_SIZE + CELL_GAP)
-        const background = this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0, 0).setDepth(0).setInteractive({ useHandCursor: true })
+        const center = this.slotCenter(slotIndex)
+        const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5).setDepth(0).setInteractive({ useHandCursor: true })
         background.on("pointerdown", () => this.selectTile(slotIndex))
         this.slotBackgrounds.push(background)
-        this.tileOutlines.push(this.add.rectangle(x, y, CELL_SIZE, CELL_SIZE).setOrigin(0, 0).setFillStyle(0, 0).setStrokeStyle(0).setDepth(3))
+        this.tileOutlines.push(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(3))
 
         const tile = board.tiles[slotIndex]
         if (tile === undefined) return
-        const text = this.add.text(x + CELL_SIZE / 2, y + CELL_SIZE / 2, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10)
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10)
         this.tileSlots.push({ tile, text })
       })
     })
@@ -517,22 +519,18 @@ export class MainScene extends Phaser.Scene {
     this.tileOutlines.forEach((outline, slotIndex) => {
       const rowIndex = Math.floor(slotIndex / 5)
       const showIndividualOutline = !this.isRowCorrect(rowIndex) && this.isLetterCorrectAtSlot(slotIndex)
-      outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x4c7b43)
+      // outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x4c7b43)
+      outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x8FAF83)
     })
   }
 
-  private slotPosition(slotIndex: number): { x: number; y: number } {
+  private slotCenter(slotIndex: number): { x: number; y: number } {
     const rowIndex = Math.floor(slotIndex / 5)
     const columnIndex = slotIndex % 5
     return {
-      x: ROW_LEFT + columnIndex * (CELL_SIZE + CELL_GAP),
-      y: ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26),
+      x: ROW_LEFT + columnIndex * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2,
+      y: ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26) + CELL_SIZE / 2,
     }
-  }
-
-  private slotCenter(slotIndex: number): { x: number; y: number } {
-    const position = this.slotPosition(slotIndex)
-    return { x: position.x + CELL_SIZE / 2, y: position.y + CELL_SIZE / 2 }
   }
 
   private colorFor(result: ForewordPuzzle["rows"][number]["pattern"][number]): number {
