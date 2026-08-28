@@ -54,8 +54,12 @@ export class MainScene extends Phaser.Scene {
   private devCountButtons: Phaser.GameObjects.Text[] = []
   private interactionMode: InteractionMode = "swap"
   private normalModeButton!: Phaser.GameObjects.Rectangle
-  private interactionModeLabel!: Phaser.GameObjects.Text
-  private wordListModeLabel!: Phaser.GameObjects.Text
+  private revealModeButton!: Phaser.GameObjects.Rectangle
+  private normalModeLabel!: Phaser.GameObjects.Text
+  private revealModeLabel!: Phaser.GameObjects.Text
+  private easyModeLabel!: Phaser.GameObjects.Text
+  private hardModeLabel!: Phaser.GameObjects.Text
+  private modeLabelAnimating = false
 
   constructor() {
     super("main")
@@ -73,6 +77,7 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = 0
     this.puzzleCreationFailed = false
     this.devPanelReady = false
+    this.modeLabelAnimating = false
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
@@ -131,17 +136,20 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildInteractionTools(): void {
-    const modeX = 31
-    const nextX = 190
+    const normalX = 31
+    const revealX = 182
+    const nextX = 342
     const y = 590
-    this.normalModeButton = this.add.rectangle(modeX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.normalModeButton = this.add.rectangle(normalX, y, 138, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    this.revealModeButton = this.add.rectangle(revealX, y, 152, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
     const nextSwapButton = this.add.rectangle(nextX, y, 72, 42, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.interactionModeLabel = this.add.text(modeX + 69, y + 21, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5)
+    this.normalModeLabel = this.add.text(normalX + 69, y + 21, "↔  NORMAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.revealModeLabel = this.add.text(revealX + 76, y + 21, "REVEAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
     const nextSwapLabel = this.add.text(nextX + 36, y + 21, "NEXT", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5)
-    this.normalModeButton.on("pointerdown", () => this.setInteractionMode(this.interactionMode === "swap" ? "reveal" : "swap"))
+    this.normalModeButton.on("pointerdown", () => this.setInteractionMode("swap"))
+    this.revealModeButton.on("pointerdown", () => this.setInteractionMode("reveal"))
     nextSwapButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    this.setInteractionMode("swap")
-    this.interactionModeLabel.setDepth(1)
+    this.setInteractionMode("swap", false)
     nextSwapLabel.setDepth(1)
   }
 
@@ -162,31 +170,78 @@ export class MainScene extends Phaser.Scene {
 
   private buildWordListModeTools(): void {
     const y = 650
-    const modeButton = this.add.rectangle(31, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
-    this.wordListModeLabel = this.add.text(83, y + 17, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
-    modeButton.on("pointerdown", () => this.setWordListMode(this.wordListMode === "easy" ? "hard" : "easy"))
-    this.setWordListModeButtons = () => this.wordListModeLabel.setText(this.wordListMode.toUpperCase())
-    this.setWordListModeButtons()
+    const easyButton = this.add.rectangle(31, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    const hardButton = this.add.rectangle(151, y, 105, 34, 0xc6bdae).setOrigin(0, 0).setInteractive({ useHandCursor: true })
+    const easyX = this.wordListMode === "easy" ? 83 : 203
+    const hardX = this.wordListMode === "easy" ? 203 : 83
+    this.easyModeLabel = this.add.text(easyX, y + 17, "EASY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.hardModeLabel = this.add.text(hardX, y + 17, "HARD", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    easyButton.on("pointerdown", () => this.setWordListMode("easy"))
+    hardButton.on("pointerdown", () => this.setWordListMode("hard"))
   }
-
-  private setWordListModeButtons: (() => void) | undefined
 
   private setWordListMode(mode: WordListMode): void {
     if (mode === this.wordListMode) return
+    if (this.modeLabelAnimating) return
     this.wordListMode = mode
-    this.setWordListModeButtons?.()
-    this.scene.restart({
-      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      minGreenTiles: this.minGreenTiles,
-      minYellowTiles: this.minYellowTiles,
-      wordListMode: this.wordListMode,
+    this.modeLabelAnimating = true
+    this.animateLabelExchange(this.easyModeLabel, this.hardModeLabel, () => {
+      this.scene.restart({
+        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+        minGreenTiles: this.minGreenTiles,
+        minYellowTiles: this.minYellowTiles,
+        wordListMode: this.wordListMode,
+      })
     })
   }
 
-  private setInteractionMode(mode: InteractionMode): void {
+  private setInteractionMode(mode: InteractionMode, animate = true): void {
+    if (mode === this.interactionMode && animate) return
+    const shouldAnimate = animate && mode !== this.interactionMode
     this.interactionMode = mode
-    this.interactionModeLabel?.setText(mode === "swap" ? "↔  NORMAL" : "REVEAL")
+    if (shouldAnimate && !this.modeLabelAnimating) {
+      this.modeLabelAnimating = true
+      this.animateLabelExchange(this.normalModeLabel, this.revealModeLabel)
+    }
+  }
+
+  private animateLabelExchange(
+    first: Phaser.GameObjects.Text,
+    second: Phaser.GameObjects.Text,
+    onComplete?: () => void,
+  ): void {
+    const firstPosition = { x: first.x, y: first.y }
+    const secondPosition = { x: second.x, y: second.y }
+    const distanceX = secondPosition.x - firstPosition.x
+    const distanceY = secondPosition.y - firstPosition.y
+    const distance = Math.hypot(distanceX, distanceY)
+    const perpendicular = { x: -distanceY / distance, y: distanceX / distance }
+    const midpoint = { x: (firstPosition.x + secondPosition.x) / 2, y: (firstPosition.y + secondPosition.y) / 2 }
+    const arcHeight = Math.min(28, Math.max(14, distance * 0.2))
+    const firstControl = { x: midpoint.x + perpendicular.x * arcHeight * this.swapDirection, y: midpoint.y + perpendicular.y * arcHeight * this.swapDirection }
+    const secondControl = { x: midpoint.x - perpendicular.x * arcHeight * this.swapDirection, y: midpoint.y - perpendicular.y * arcHeight * this.swapDirection }
+    this.swapDirection *= -1
+    this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 300,
+      ease: "Sine.easeInOut",
+      onUpdate: (tween) => {
+        const progress = tween.getValue()
+        if (progress === null) return
+        const firstPoint = quadraticPoint(firstPosition, firstControl, secondPosition, progress)
+        const secondPoint = quadraticPoint(secondPosition, secondControl, firstPosition, progress)
+        first.setPosition(firstPoint.x, firstPoint.y)
+        second.setPosition(secondPoint.x, secondPoint.y)
+      },
+      onComplete: () => {
+        first.setPosition(secondPosition.x, secondPosition.y)
+        second.setPosition(firstPosition.x, firstPosition.y)
+        this.modeLabelAnimating = false
+        onComplete?.()
+      },
+    })
   }
 
   private buildDevPanel(): void {
