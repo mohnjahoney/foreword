@@ -5,6 +5,7 @@ import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
+import { configureLogicalCamera } from "../style/rendering"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
 const CELL_SIZE = 52
@@ -61,6 +62,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   create(data: SceneData = {}): void {
+    configureLogicalCamera(this)
     this.tileSlots = []
     this.slotBackgrounds = []
     this.tileOutlines = []
