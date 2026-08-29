@@ -4,6 +4,7 @@ import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
+import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
 
@@ -23,6 +24,7 @@ interface SceneData extends PuzzleSetup {}
 type InteractionMode = "swap" | "reveal"
 type WordListMode = "easy" | "hard"
 type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
+type ReviewPathKind = "player" | "reference"
 
 const ICON_KEYS = ["replace", "eye", "square", "layers-3", "rotate-ccw", "arrow-right"] as const
 
@@ -64,6 +66,15 @@ export class MainScene extends Phaser.Scene {
   private easyModeLabel!: Phaser.GameObjects.Container
   private hardModeLabel!: Phaser.GameObjects.Container
   private modeLabelAnimating = false
+  private playerPath: ReviewState[] = []
+  private reviewOverlay?: Phaser.GameObjects.Container
+  private reviewTimeline?: Phaser.GameObjects.Container
+  private reviewReferencePath: ReviewState[] = []
+  private reviewSelectedPath: ReviewPathKind = "player"
+  private reviewSelectedIndex = 0
+  private reviewOriginalTiles: LetterTile[] = []
+  private reviewPlaying = false
+  private reviewTimer?: Phaser.Time.TimerEvent
   private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
   private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
   private static readonly BUTTON_STROKE_COLOR = 0x756d5e
@@ -89,6 +100,13 @@ export class MainScene extends Phaser.Scene {
     this.swapAnimating = false
     this.movesTaken = 0
     this.minimumMoves = 0
+    this.playerPath = []
+    this.reviewOverlay = undefined
+    this.reviewTimeline = undefined
+    this.reviewReferencePath = []
+    this.reviewPlaying = false
+    this.reviewTimer?.remove()
+    this.reviewTimer = undefined
     this.puzzleCreationFailed = false
     this.devPanelReady = false
     this.modeLabelAnimating = false
@@ -141,7 +159,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
-    this.add.rectangle(285, 535, 115, 140, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+    this.add.rectangle(285, 535, 115, 168, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
     const nextButton = this.add.rectangle(295, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.add.image(317, 562, "foreword-arrow-right").setDisplaySize(25, 25).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
@@ -152,6 +170,9 @@ export class MainScene extends Phaser.Scene {
     this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
     this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
     this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    const reviewButton = this.add.rectangle(295, 650, 95, 28, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(342, 664, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    reviewButton.on("pointerdown", () => this.enterReviewMode())
     this.updateMoveInfo()
   }
 
@@ -399,6 +420,8 @@ export class MainScene extends Phaser.Scene {
         this.tileSlots.push({ tile, text })
       })
     })
+    const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
+    this.playerPath = [{ tiles: initialTiles, deltaCorrect: 0, correctCount: countCorrectTiles(this.puzzle, initialTiles) }]
     this.updateLetterFeedback()
   }
 
@@ -414,6 +437,9 @@ export class MainScene extends Phaser.Scene {
       visual.text.setPosition(center.x, center.y).setDepth(10)
     })
     this.movesTaken = 0
+    const resetTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
+    this.playerPath = [{ tiles: resetTiles, deltaCorrect: 0, correctCount: countCorrectTiles(this.puzzle, resetTiles) }]
+    this.minimumMoves = countAlgorithmicMoves(this.puzzle, resetTiles)
     this.selectedSlot = undefined
     this.updateMoveInfo()
     this.updateSelection()
@@ -446,6 +472,11 @@ export class MainScene extends Phaser.Scene {
     const first = this.tileSlots[firstSlot]
     const second = this.tileSlots[secondSlot]
     if (first === undefined || second === undefined) return
+    const currentTiles = this.tileSlots.map((visual) => visual.tile)
+    const nextTiles = swapTileState(currentTiles, firstSlot, secondSlot)
+    const currentCorrect = countCorrectTiles(this.puzzle, currentTiles)
+    const nextCorrect = countCorrectTiles(this.puzzle, nextTiles)
+    this.playerPath.push({ tiles: nextTiles.map((tile) => ({ ...tile })), deltaCorrect: nextCorrect - currentCorrect, correctCount: nextCorrect, swap: { firstSlot, secondSlot } })
     this.tileSlots[firstSlot] = second
     this.tileSlots[secondSlot] = first
     this.movesTaken += 1
@@ -575,6 +606,155 @@ export class MainScene extends Phaser.Scene {
   private colorFor(result: ForewordPuzzle["rows"][number]["pattern"][number]): number {
     return COLORS[result]
   }
+
+  private enterReviewMode(): void {
+    if (this.puzzleCreationFailed || this.swapAnimating || this.reviewOverlay !== undefined) return
+    this.reviewOriginalTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
+    const currentTiles = this.reviewOriginalTiles
+    this.reviewReferencePath = createReferencePath(this.puzzle, currentTiles)
+    this.reviewSelectedPath = "player"
+    this.reviewSelectedIndex = Math.max(0, this.playerPath.length - 1)
+    this.reviewOverlay = this.add.container(0, 0).setDepth(40)
+    this.reviewOverlay.add(this.add.rectangle(0, 0, 430, 760, 0xf3eedf, 0.98).setOrigin(0, 0).setInteractive())
+    this.reviewOverlay.add(this.add.text(24, 26, "REVIEW", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }))
+    const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
+    close.on("pointerdown", () => this.exitReviewMode(false))
+    this.reviewOverlay.add(close)
+    this.reviewTimeline = this.add.container(0, 0)
+    this.reviewOverlay.add(this.reviewTimeline)
+    this.buildReviewControls()
+    this.refreshReview()
+  }
+
+  private buildReviewControls(): void {
+    if (this.reviewOverlay === undefined) return
+    const controls: Array<[number, string, () => void]> = [
+      [35, "‹ BACK", () => this.stepReview(-1)],
+      [125, "PLAY", () => this.playReview()],
+      [215, "STOP", () => this.stopReview()],
+      [305, "NEXT ›", () => this.stepReview(1)],
+    ]
+    controls.forEach(([x, label, callback]) => {
+      const button = this.add.rectangle(x, 665, 80, 32, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+      button.on("pointerdown", callback)
+      this.reviewOverlay?.add(button)
+      this.reviewOverlay?.add(this.add.text(x + 40, 681, label, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5))
+    })
+    const continueButton = this.add.rectangle(105, 710, 220, 34, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    continueButton.on("pointerdown", () => this.continueFromReview())
+    this.reviewOverlay.add(continueButton)
+    this.reviewOverlay.add(this.add.text(215, 727, "CONTINUE PLAYING FROM HERE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0.5))
+  }
+
+  private refreshReview(): void {
+    if (this.reviewTimeline === undefined) return
+    this.reviewTimeline.removeAll(true)
+    if (this.reviewSelectedPath === "player") {
+      const referenceStart = this.playerPath[this.reviewSelectedIndex]?.tiles ?? this.reviewOriginalTiles
+      this.reviewReferencePath = createReferencePath(this.puzzle, referenceStart)
+    }
+    this.drawReviewTimeline(this.playerPath, "YOUR PATH", 100, "player")
+    this.drawReviewTimeline(this.reviewReferencePath, "REFERENCE", 285, "reference")
+    const selectedState = this.getSelectedReviewState()
+    if (selectedState !== undefined) this.applyTileState(selectedState.tiles)
+  }
+
+  private drawReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
+    if (this.reviewTimeline === undefined) return
+    const timeline = this.reviewTimeline
+    const startX = 30
+    const maxSteps = Math.max(this.playerPath.length, this.reviewReferencePath.length) - 1
+    const stepWidth = Math.min(34, 370 / Math.max(1, maxSteps))
+    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
+    states.forEach((state, index) => {
+      const x = startX + index * stepWidth
+      if (index > 0) {
+        timeline.add(this.add.line(0, 0, x - stepWidth + 7, y, x - 7, y, MainScene.BUTTON_STROKE_COLOR).setLineWidth(2))
+        const deltaColor = reviewDeltaColor(state.deltaCorrect)
+        timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, 24, 18, deltaColor).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR))
+        timeline.add(this.add.text(x - stepWidth / 2, y + 23, formatDelta(state.deltaCorrect), { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5))
+      }
+      const selected = kind === this.reviewSelectedPath && index === this.reviewSelectedIndex
+      const node = this.add.circle(x, y, selected ? 10 : 8, selected ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setStrokeStyle(2, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+      node.on("pointerdown", () => {
+        this.reviewSelectedPath = kind
+        this.reviewSelectedIndex = index
+        this.refreshReview()
+      })
+      timeline.add(node)
+      if (index === 0) timeline.add(this.add.text(x, y - 1, "0", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "8px", fontStyle: "bold" }).setOrigin(0.5))
+    })
+  }
+
+  private getSelectedReviewState(): ReviewState | undefined {
+    const states = this.reviewSelectedPath === "player" ? this.playerPath : this.reviewReferencePath
+    return states[this.reviewSelectedIndex]
+  }
+
+  private stepReview(amount: number): void {
+    this.stopReview()
+    const states = this.reviewSelectedPath === "player" ? this.playerPath : this.reviewReferencePath
+    this.reviewSelectedIndex = Math.max(0, Math.min(states.length - 1, this.reviewSelectedIndex + amount))
+    this.refreshReview()
+  }
+
+  private playReview(): void {
+    if (this.reviewPlaying) return
+    this.reviewPlaying = true
+    this.reviewTimer = this.time.addEvent({ delay: 550, loop: true, callback: () => {
+      const states = this.reviewSelectedPath === "player" ? this.playerPath : this.reviewReferencePath
+      if (this.reviewSelectedIndex >= states.length - 1) {
+        this.stopReview()
+        return
+      }
+      this.reviewSelectedIndex += 1
+      this.refreshReview()
+    } })
+  }
+
+  private stopReview(): void {
+    this.reviewPlaying = false
+    this.reviewTimer?.remove()
+    this.reviewTimer = undefined
+  }
+
+  private continueFromReview(): void {
+    const selected = this.getSelectedReviewState()
+    if (selected === undefined) return
+    if (this.reviewSelectedPath === "player") {
+      this.playerPath = this.playerPath.slice(0, this.reviewSelectedIndex + 1)
+      this.movesTaken = this.reviewSelectedIndex
+    } else {
+      this.playerPath = [{ tiles: selected.tiles.map((tile) => ({ ...tile })), deltaCorrect: 0, correctCount: selected.correctCount }]
+      this.movesTaken = 0
+    }
+    this.applyTileState(selected.tiles)
+    this.minimumMoves = countAlgorithmicMoves(this.puzzle, selected.tiles)
+    this.updateMoveInfo()
+    this.exitReviewMode(true)
+  }
+
+  private exitReviewMode(keepState: boolean): void {
+    this.stopReview()
+    if (!keepState) this.applyTileState(this.reviewOriginalTiles)
+    this.reviewOverlay?.destroy(true)
+    this.reviewOverlay = undefined
+    this.reviewTimeline = undefined
+    this.updateRowFeedback()
+  }
+
+  private applyTileState(state: readonly LetterTile[]): void {
+    const visualsById = new Map(this.tileSlots.map((visual) => [visual.tile.id, visual]))
+    const nextVisuals = state.map((tile) => visualsById.get(tile.id)).filter((visual): visual is TileVisual => visual !== undefined)
+    if (nextVisuals.length !== this.tileSlots.length) return
+    this.tileSlots = nextVisuals
+    this.tileSlots.forEach((visual, slotIndex) => {
+      visual.tile = { ...state[slotIndex]! }
+      const center = this.slotCenter(slotIndex)
+      visual.text.setText(visual.tile.letter).setPosition(center.x, center.y).setDepth(10)
+    })
+    this.updateLetterFeedback()
+  }
 }
 
 function quadraticPoint(
@@ -599,6 +779,17 @@ function patternsMatch(
 
 function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
+}
+
+function formatDelta(delta: number): string {
+  return delta > 0 ? `+${delta}` : String(delta)
+}
+
+function reviewDeltaColor(delta: number): number {
+  if (delta >= 2) return 0x8fae7f
+  if (delta === 1) return 0xb4c59d
+  if (delta < 0) return 0xd49b86
+  return 0xc6bdae
 }
 
 function createIconLabel(
