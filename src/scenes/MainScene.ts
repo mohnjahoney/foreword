@@ -68,6 +68,7 @@ export class MainScene extends Phaser.Scene {
   private modeLabelAnimating = false
   private playerPath: ReviewState[] = []
   private reviewOverlay?: Phaser.GameObjects.Container
+  private reviewBoard?: Phaser.GameObjects.Container
   private reviewTimeline?: Phaser.GameObjects.Container
   private reviewReferencePath: ReviewState[] = []
   private reviewSelectedPath: ReviewPathKind = "player"
@@ -102,6 +103,7 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = 0
     this.playerPath = []
     this.reviewOverlay = undefined
+    this.reviewBoard = undefined
     this.reviewTimeline = undefined
     this.reviewReferencePath = []
     this.reviewPlaying = false
@@ -617,6 +619,9 @@ export class MainScene extends Phaser.Scene {
     this.reviewOverlay = this.add.container(0, 0).setDepth(40)
     this.reviewOverlay.add(this.add.rectangle(0, 0, 430, 760, 0xf3eedf, 0.98).setOrigin(0, 0).setInteractive())
     this.reviewOverlay.add(this.add.text(24, 26, "REVIEW", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }))
+    this.reviewOverlay.add(this.add.text(215, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }).setOrigin(0.5))
+    this.reviewBoard = this.add.container(0, 0)
+    this.reviewOverlay.add(this.reviewBoard)
     const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.exitReviewMode(false))
     this.reviewOverlay.add(close)
@@ -653,10 +658,13 @@ export class MainScene extends Phaser.Scene {
       const referenceStart = this.playerPath[this.reviewSelectedIndex]?.tiles ?? this.reviewOriginalTiles
       this.reviewReferencePath = createReferencePath(this.puzzle, referenceStart)
     }
-    this.drawReviewTimeline(this.playerPath, "YOUR PATH", 100, "player")
-    this.drawReviewTimeline(this.reviewReferencePath, "REFERENCE", 285, "reference")
+    this.drawReviewTimeline(this.playerPath, "YOUR PATH", 535, "player")
+    this.drawReviewTimeline(this.reviewReferencePath, "REFERENCE", 605, "reference")
     const selectedState = this.getSelectedReviewState()
-    if (selectedState !== undefined) this.applyTileState(selectedState.tiles)
+    if (selectedState !== undefined) {
+      this.applyTileState(selectedState.tiles)
+      this.drawReviewBoard(selectedState.tiles)
+    }
   }
 
   private drawReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
@@ -754,6 +762,27 @@ export class MainScene extends Phaser.Scene {
       visual.text.setText(visual.tile.letter).setPosition(center.x, center.y).setDepth(10)
     })
     this.updateLetterFeedback()
+  }
+
+  private drawReviewBoard(state: readonly LetterTile[]): void {
+    if (this.reviewBoard === undefined) return
+    this.reviewBoard.removeAll(true)
+    this.puzzle.rows.forEach((row, rowIndex) => {
+      const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
+      const rowWidth = 5 * CELL_SIZE + 4 * CELL_GAP + 14
+      const word = state.slice(rowIndex * 5, (rowIndex + 1) * 5).map((tile) => tile.letter).join("")
+      this.reviewBoard?.add(this.add.rectangle(ROW_LEFT - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + 14) / 2, rowWidth, CELL_SIZE + 14).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(word === row.intendedGuess ? 4 : 0, 0x8faf83))
+      row.pattern.forEach((result, columnIndex) => {
+        const slotIndex = rowIndex * 5 + columnIndex
+        const center = this.slotCenter(slotIndex)
+        this.reviewBoard?.add(this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5))
+        const tile = state[slotIndex]
+        if (tile === undefined) return
+        const individualCorrect = tile.letter === row.intendedGuess[columnIndex] && word !== row.intendedGuess
+        this.reviewBoard?.add(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(individualCorrect ? 4 : 0, 0x8faf83))
+        this.reviewBoard?.add(this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5))
+      })
+    })
   }
 }
 
