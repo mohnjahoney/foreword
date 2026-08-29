@@ -681,9 +681,7 @@ export class MainScene extends Phaser.Scene {
         const deltaColor = reviewDeltaColor(state.deltaCorrect)
         timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, Math.max(3, stepWidth - 2), 14, deltaColor).setOrigin(0.5))
       }
-      const selected = kind === this.reviewSelectedPath && index === this.reviewSelectedIndex
-      const nodeRadius = Math.min(10, Math.max(4, stepWidth / 2))
-      const node = this.add.circle(x, y, selected ? nodeRadius + 2 : nodeRadius, selected ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setStrokeStyle(2, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+      const node = this.add.circle(x, y, 2, 0x211f1a).setInteractive(new Phaser.Geom.Circle(0, 0, 9), Phaser.Geom.Circle.Contains)
       node.on("pointerdown", () => {
         this.reviewSelectedPath = kind
         this.reviewSelectedIndex = index
