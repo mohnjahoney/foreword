@@ -679,7 +679,7 @@ export class MainScene extends Phaser.Scene {
     const maxSteps = Math.max(this.playerPath.length, this.reviewReferencePath.length) - 1
     const stepWidth = Math.min(34, 370 / Math.max(1, maxSteps))
     timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
-    const touchStrip = this.add.rectangle(30 + (states.length - 1) * stepWidth / 2, y, Math.max(30, (states.length - 1) * stepWidth + 24), 58, 0xffffff, 0).setInteractive()
+    const touchStrip = this.add.rectangle(30 + (states.length - 1) * stepWidth / 2, y + 25, Math.max(30, (states.length - 1) * stepWidth + 24), 22, 0xffffff, 0).setInteractive()
     touchStrip.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       this.reviewZoomFocus = { kind, x: pointer.worldX }
       this.updateReviewZoom()
@@ -724,6 +724,8 @@ export class MainScene extends Phaser.Scene {
         const influence = Math.max(0, 1 - distance / 30)
         entry.dot.setPosition(positions[index] ?? entry.baseX, entry.y - 16 * influence)
         entry.dot.setRadius(2 + 6 * influence)
+        entry.dot.setFillStyle(influence > 0 ? 0xfaf6e9 : 0x211f1a, 1)
+        entry.dot.setStrokeStyle(influence > 0 ? 2 : 0, 0x211f1a, 1)
       })
     })
   }
