@@ -679,18 +679,17 @@ export class MainScene extends Phaser.Scene {
       if (index > 0) {
         timeline.add(this.add.line(0, 0, x - stepWidth + 7, y, x - 7, y, MainScene.BUTTON_STROKE_COLOR).setLineWidth(2))
         const deltaColor = reviewDeltaColor(state.deltaCorrect)
-        timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, 24, 18, deltaColor).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR))
-        timeline.add(this.add.text(x - stepWidth / 2, y + 23, formatDelta(state.deltaCorrect), { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5))
+        timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, Math.max(3, stepWidth - 2), 14, deltaColor).setOrigin(0.5))
       }
       const selected = kind === this.reviewSelectedPath && index === this.reviewSelectedIndex
-      const node = this.add.circle(x, y, selected ? 10 : 8, selected ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setStrokeStyle(2, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+      const nodeRadius = Math.min(10, Math.max(4, stepWidth / 2))
+      const node = this.add.circle(x, y, selected ? nodeRadius + 2 : nodeRadius, selected ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setStrokeStyle(2, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
       node.on("pointerdown", () => {
         this.reviewSelectedPath = kind
         this.reviewSelectedIndex = index
         this.refreshReview()
       })
       timeline.add(node)
-      if (index === 0) timeline.add(this.add.text(x, y - 1, "0", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "8px", fontStyle: "bold" }).setOrigin(0.5))
     })
   }
 
@@ -808,10 +807,6 @@ function patternsMatch(
 
 function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
-}
-
-function formatDelta(delta: number): string {
-  return delta > 0 ? `+${delta}` : String(delta)
 }
 
 function reviewDeltaColor(delta: number): number {
