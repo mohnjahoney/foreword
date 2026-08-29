@@ -76,6 +76,8 @@ export class MainScene extends Phaser.Scene {
   private reviewOriginalTiles: LetterTile[] = []
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
+  private reviewZoomFocus?: { kind: ReviewPathKind; x: number }
+  private reviewZoomDots: Array<{ kind: ReviewPathKind; dot: Phaser.GameObjects.Arc; baseX: number; y: number }> = []
   private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
   private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
   private static readonly BUTTON_STROKE_COLOR = 0x756d5e
@@ -107,6 +109,8 @@ export class MainScene extends Phaser.Scene {
     this.reviewTimeline = undefined
     this.reviewReferencePath = []
     this.reviewPlaying = false
+    this.reviewZoomFocus = undefined
+    this.reviewZoomDots = []
     this.reviewTimer?.remove()
     this.reviewTimer = undefined
     this.puzzleCreationFailed = false
@@ -654,6 +658,7 @@ export class MainScene extends Phaser.Scene {
   private refreshReview(): void {
     if (this.reviewTimeline === undefined) return
     this.reviewTimeline.removeAll(true)
+    this.reviewZoomDots = []
     if (this.reviewSelectedPath === "player") {
       const referenceStart = this.playerPath[this.reviewSelectedIndex]?.tiles ?? this.reviewOriginalTiles
       this.reviewReferencePath = createReferencePath(this.puzzle, referenceStart)
@@ -674,20 +679,52 @@ export class MainScene extends Phaser.Scene {
     const maxSteps = Math.max(this.playerPath.length, this.reviewReferencePath.length) - 1
     const stepWidth = Math.min(34, 370 / Math.max(1, maxSteps))
     timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
+    const touchStrip = this.add.rectangle(30 + (states.length - 1) * stepWidth / 2, y, Math.max(30, (states.length - 1) * stepWidth + 24), 58, 0xffffff, 0).setInteractive()
+    touchStrip.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      this.reviewZoomFocus = { kind, x: pointer.worldX }
+      this.updateReviewZoom()
+    })
+    touchStrip.on("pointerout", () => {
+      if (this.reviewZoomFocus?.kind !== kind) return
+      this.reviewZoomFocus = undefined
+      this.updateReviewZoom()
+    })
+    timeline.add(touchStrip)
+    const baseXs = states.map((_state, index) => startX + index * stepWidth)
+    const positions = this.reviewZoomFocus?.kind === kind ? getZoomedPositions(baseXs, this.reviewZoomFocus.x) : baseXs
     states.forEach((state, index) => {
-      const x = startX + index * stepWidth
+      const x = positions[index] ?? baseXs[index]!
       if (index > 0) {
-        timeline.add(this.add.line(0, 0, x - stepWidth + 7, y, x - 7, y, MainScene.BUTTON_STROKE_COLOR).setLineWidth(2))
         const deltaColor = reviewDeltaColor(state.deltaCorrect)
         timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, Math.max(3, stepWidth - 2), 14, deltaColor).setOrigin(0.5))
       }
       const node = this.add.circle(x, y, 2, 0x211f1a).setInteractive(new Phaser.Geom.Circle(0, 0, 9), Phaser.Geom.Circle.Contains)
+      this.reviewZoomDots.push({ kind, dot: node, baseX: baseXs[index]!, y })
       node.on("pointerdown", () => {
         this.reviewSelectedPath = kind
         this.reviewSelectedIndex = index
         this.refreshReview()
       })
       timeline.add(node)
+    })
+  }
+
+  private updateReviewZoom(): void {
+    const byKind = new Map<ReviewPathKind, typeof this.reviewZoomDots>()
+    this.reviewZoomDots.forEach((entry) => {
+      const dots = byKind.get(entry.kind) ?? []
+      dots.push(entry)
+      byKind.set(entry.kind, dots)
+    })
+    byKind.forEach((dots, kind) => {
+      const baseXs = dots.map((entry) => entry.baseX)
+      const positions = this.reviewZoomFocus?.kind === kind ? getZoomedPositions(baseXs, this.reviewZoomFocus.x) : baseXs
+      dots.forEach((entry, index) => {
+        const distance = this.reviewZoomFocus?.kind === kind ? Math.abs(entry.baseX - this.reviewZoomFocus.x) : Infinity
+        const influence = Math.max(0, 1 - distance / 30)
+        entry.dot.setPosition(positions[index] ?? entry.baseX, entry.y - 16 * influence)
+        entry.dot.setRadius(2 + 6 * influence)
+      })
     })
   }
 
@@ -812,6 +849,23 @@ function reviewDeltaColor(delta: number): number {
   if (delta === 1) return 0xb4c59d
   if (delta < 0) return 0xd49b86
   return 0xc6bdae
+}
+
+function getZoomedPositions(baseXs: number[], focusX: number): number[] {
+  if (baseXs.length < 2) return baseXs
+  const radii = baseXs.map((baseX) => 2 + 6 * Math.max(0, 1 - Math.abs(baseX - focusX) / 30))
+  const positions = baseXs.map((baseX) => {
+    const influence = Math.max(0, 1 - Math.abs(baseX - focusX) / 30)
+    return focusX + (baseX - focusX) * (1 + 0.6 * influence)
+  })
+  for (let index = 1; index < positions.length; index += 1) {
+    positions[index] = Math.max(positions[index]!, positions[index - 1]! + Math.max(3, radii[index - 1]! + radii[index]! + 6))
+  }
+  const rightOverflow = positions.at(-1)! - baseXs.at(-1)!
+  if (rightOverflow > 0) positions.forEach((_position, index) => { positions[index] = positions[index]! - rightOverflow })
+  const leftOverflow = baseXs[0]! - positions[0]!
+  if (leftOverflow > 0) positions.forEach((_position, index) => { positions[index] = positions[index]! + leftOverflow })
+  return positions
 }
 
 function createIconLabel(
