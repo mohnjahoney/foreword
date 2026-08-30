@@ -42,15 +42,14 @@ export function createReviewCardRects(
   const cardCount = Math.max(0, stateCount * 2 - 1)
   if (cardCount === 0) return []
   const cardWidth = Math.min(config.cardWidth, right - left)
-  const restSpacing = Math.min(cardWidth * 0.48, cardCount === 1 ? 0 : (right - left - cardWidth) / (cardCount - 1))
-  const totalWidth = cardWidth + Math.max(0, cardCount - 1) * restSpacing
+  const restAdvance = Math.min(cardWidth * 0.48, cardCount === 1 ? 0 : (right - left - cardWidth) / (cardCount - 1))
+  const totalWidth = cardWidth + Math.max(0, cardCount - 1) * restAdvance
   let cursor = right - totalWidth
   const rects: ReviewCardRect[] = []
   for (let cardIndex = 0; cardIndex < cardCount; cardIndex += 1) {
     const type = cardIndex % 2 === 0 ? "state" : "transition"
     rects.push({ type, index: type === "state" ? cardIndex / 2 : (cardIndex - 1) / 2, cardIndex, baseLeft: cursor, baseRight: cursor + cardWidth })
-    cursor += cardWidth
-    if (cardIndex < cardCount - 1) cursor += restSpacing
+    if (cardIndex < cardCount - 1) cursor += restAdvance
   }
   return rects
 }
@@ -75,16 +74,17 @@ export function layoutReviewCards(
     return rects.map((rect) => ({ ...rect, left: rect.baseLeft, right: rect.baseRight, width: cardWidth, center: (rect.baseLeft + rect.baseRight) / 2, verticalInfluence: 0 }))
   }
   const focusX = pointerX ?? restFocusX(rects, focus) ?? (left + right) / 2
-  const rawGaps = rects.slice(0, -1).map((_rect, index) => gapForBoundary(index, focus, config))
+  const restAdvance = deriveRestAdvance(rects)
+  const rawGaps = rects.slice(0, -1).map((_rect, index) => gapForBoundary(index, focus, config, restAdvance))
   const focusGapTotal = rawGaps.reduce((total, gap, index) => total + (isFocusGap(index, focus) ? gap : 0), 0)
   const nonFocusGapCount = rawGaps.filter((_gap, index) => !isFocusGap(index, focus)).length
   const availableSpan = right - left - cardWidth
-  const nonFocusGap = Math.min(config.restSpacing || deriveRestSpacing(rects), nonFocusGapCount === 0 ? 0 : Math.max(0, (availableSpan - focusGapTotal) / nonFocusGapCount))
+  const nonFocusGap = Math.min(config.restSpacing || restAdvance, nonFocusGapCount === 0 ? 0 : Math.max(0, (availableSpan - cardWidth - focusGapTotal) / nonFocusGapCount))
   const gaps = rawGaps.map((gap, index) => isFocusGap(index, focus) ? gap : nonFocusGap)
   const positions = new Array<number>(rects.length)
   positions[focus] = focusX - cardWidth / 2
-  for (let index = focus - 1; index >= 0; index -= 1) positions[index] = positions[index + 1]! - gaps[index]! - cardWidth
-  for (let index = focus + 1; index < rects.length; index += 1) positions[index] = positions[index - 1]! + cardWidth + gaps[index - 1]!
+  for (let index = focus - 1; index >= 0; index -= 1) positions[index] = positions[index + 1]! - gaps[index]!
+  for (let index = focus + 1; index < rects.length; index += 1) positions[index] = positions[index - 1]! + gaps[index - 1]!
   const minShift = left - positions[0]!
   const maxShift = right - (positions.at(-1)! + cardWidth)
   const shift = Math.max(minShift, Math.min(maxShift, 0))
@@ -103,17 +103,17 @@ export function nearestReviewCardIndex(rects: readonly ReviewCardRect[], x: numb
   }, 0)
 }
 
-function gapForBoundary(index: number, focus: number, config: ReviewCardConfig): number {
+function gapForBoundary(index: number, focus: number, config: ReviewCardConfig, restAdvance: number): number {
   if (isFocusGap(index, focus)) return config.maxSpacing
   if (Math.abs(index - focus) === 1 || Math.abs(index + 1 - focus) === 1) return config.adjacentSpacing
-  return config.restSpacing
+  return config.restSpacing || restAdvance
 }
 
 function isFocusGap(index: number, focus: number): boolean {
   return index === focus - 1 || index === focus
 }
 
-function deriveRestSpacing(rects: readonly ReviewCardRect[]): number {
+function deriveRestAdvance(rects: readonly ReviewCardRect[]): number {
   if (rects.length < 2) return 0
-  return Math.max(0, rects[1]!.baseLeft - rects[0]!.baseRight)
+  return Math.max(0, rects[1]!.baseLeft - rects[0]!.baseLeft)
 }
