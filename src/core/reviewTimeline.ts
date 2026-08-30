@@ -32,7 +32,7 @@ export interface LaidOutTimelineRect extends TimelineRect {
 export const DEFAULT_MAGNIFICATION_CONFIG: MagnificationConfig = {
   radius: 30,
   restStateWidth: 4,
-  restTransitionWidth: 24,
+  restTransitionWidth: 30,
   focusedWidth: 18,
   baseHeight: 14,
   maxHeightScale: 2.2,
@@ -55,16 +55,30 @@ export function heightAtInfluence(influence: number, config: MagnificationConfig
   return config.baseHeight * lerp(1, config.maxHeightScale, influence)
 }
 
-export function createTimelineRects(stateCount: number, left: number, availableWidth: number, config = DEFAULT_MAGNIFICATION_CONFIG): TimelineRect[] {
+export function timelineScaleForStateCount(stateCount: number, maxWidth: number, config = DEFAULT_MAGNIFICATION_CONFIG): number {
+  if (stateCount <= 0) return 1
+  const transitionCount = Math.max(0, stateCount - 1)
+  const restWidth = stateCount * config.restStateWidth + transitionCount * config.restTransitionWidth
+  return restWidth > maxWidth ? maxWidth / restWidth : 1
+}
+
+export function timelineWidthForStateCount(stateCount: number, scale = 1, config = DEFAULT_MAGNIFICATION_CONFIG): number {
+  const transitionCount = Math.max(0, stateCount - 1)
+  return (stateCount * config.restStateWidth + transitionCount * config.restTransitionWidth) * scale
+}
+
+export function createTimelineRects(
+  stateCount: number,
+  left: number,
+  maxWidth: number,
+  config = DEFAULT_MAGNIFICATION_CONFIG,
+  scaleOverride?: number,
+): TimelineRect[] {
   if (stateCount <= 0) return []
   const transitionCount = Math.max(0, stateCount - 1)
-  const transitionWidth = transitionCount === 0
-    ? 0
-    : Math.max(config.restTransitionWidth, (availableWidth - stateCount * config.restStateWidth) / transitionCount)
-  const totalWidth = stateCount * config.restStateWidth + transitionCount * transitionWidth
-  const scale = totalWidth > availableWidth ? availableWidth / totalWidth : 1
+  const scale = scaleOverride ?? timelineScaleForStateCount(stateCount, maxWidth, config)
   const stateWidth = config.restStateWidth * scale
-  const scaledTransitionWidth = transitionWidth * scale
+  const scaledTransitionWidth = config.restTransitionWidth * scale
   const rects: TimelineRect[] = []
   let cursor = left
   for (let index = 0; index < stateCount; index += 1) {
@@ -103,7 +117,11 @@ export function layoutTimelineRects(
       ? influenceAt((rect.baseLeft + rect.baseRight) / 2, mouseX, config.radius)
       : averageInfluenceAcrossInterval(rect.baseLeft, rect.baseRight, mouseX, config.radius)
   })
-  const widths = rects.map((rect, index) => widthAt(rect.type, influences[index]!, config))
+  const rawWidths = rects.map((rect, index) => widthAt(rect.type, influences[index]!, config))
+  const targetWidth = rects.at(-1)!.baseRight - rects[0]!.baseLeft
+  const rawWidth = rawWidths.reduce((total, width) => total + width, 0)
+  const normalization = rawWidth === 0 ? 1 : targetWidth / rawWidth
+  const widths = rawWidths.map((width) => width * normalization)
   const laidOut: LaidOutTimelineRect[] = []
   let cursor = rects[0]!.baseLeft
   rects.forEach((rect, index) => {

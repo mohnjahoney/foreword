@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createTimelineRects, influenceAt, layoutTimelineRects, widthAt } from "./reviewTimeline"
+import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, influenceAt, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, widthAt } from "./reviewTimeline"
 
 describe("review timeline magnification", () => {
   it("uses a smooth influence field", () => {
@@ -20,7 +20,15 @@ describe("review timeline magnification", () => {
     const base = createTimelineRects(2, 30, 370)
     const layout = layoutTimelineRects(base, 32, 30, 400, "center")
     expect(layout[0]!.width).toBeGreaterThan(4)
-    expect(widthAt("state", 1, { radius: 30, restStateWidth: 4, restTransitionWidth: 24, focusedWidth: 18, baseHeight: 14, maxHeightScale: 2.2, maxVerticalDisplacement: 16, smoothing: 0.22 })).toBe(18)
-    expect(widthAt("transition", 1, { radius: 30, restStateWidth: 4, restTransitionWidth: 24, focusedWidth: 18, baseHeight: 14, maxHeightScale: 2.2, maxVerticalDisplacement: 16, smoothing: 0.22 })).toBe(18)
+    expect(widthAt("state", 1, DEFAULT_MAGNIFICATION_CONFIG)).toBe(DEFAULT_MAGNIFICATION_CONFIG.focusedWidth)
+    expect(widthAt("transition", 1, DEFAULT_MAGNIFICATION_CONFIG)).toBe(DEFAULT_MAGNIFICATION_CONFIG.focusedWidth)
+  })
+
+  it("uses the longer path to establish a shared base tile scale", () => {
+    const scale = timelineScaleForStateCount(8, 344)
+    const longWidth = timelineWidthForStateCount(8, scale)
+    const shortWidth = timelineWidthForStateCount(5, scale)
+    expect(longWidth).toBeLessThanOrEqual(344)
+    expect(shortWidth).toBeLessThan(longWidth)
   })
 })

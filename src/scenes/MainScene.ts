@@ -5,7 +5,7 @@ import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
-import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
+import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
 
@@ -80,7 +80,7 @@ export class MainScene extends Phaser.Scene {
   private reviewZoomTarget?: { kind: ReviewPathKind; x: number }
   private reviewZoomSmoothedX?: { kind: ReviewPathKind; x: number }
   private reviewZoomFrame?: number
-  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; baseRects: TimelineRect[]; visuals: Phaser.GameObjects.Rectangle[] }> = []
+  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; baseRects: TimelineRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number }> = []
   private magnificationMode: MagnificationMode = "center"
   private centerMagnificationButton!: Phaser.GameObjects.Rectangle
   private continuousMagnificationButton!: Phaser.GameObjects.Rectangle
@@ -708,12 +708,15 @@ export class MainScene extends Phaser.Scene {
   private drawReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
     if (this.reviewTimeline === undefined) return
     const timeline = this.reviewTimeline
-    const startX = 30
     timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
-    const baseRects = createTimelineRects(states.length, startX, 370, DEFAULT_MAGNIFICATION_CONFIG)
+    const largerStateCount = Math.max(this.playerPath.length, this.reviewReferencePath.length)
+    const scale = timelineScaleForStateCount(largerStateCount, 344, DEFAULT_MAGNIFICATION_CONFIG)
+    const stripWidth = timelineWidthForStateCount(states.length, scale, DEFAULT_MAGNIFICATION_CONFIG)
+    const startX = (430 - stripWidth) / 2
+    const baseRects = createTimelineRects(states.length, startX, 344, DEFAULT_MAGNIFICATION_CONFIG, scale)
     const rowVisuals: Phaser.GameObjects.Rectangle[] = []
     baseRects.forEach((baseRect, rectIndex) => {
-      const initial = layoutTimelineRects(baseRects, undefined, startX, 400, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)[rectIndex]!
+      const initial = layoutTimelineRects(baseRects, undefined, startX, startX + stripWidth, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)[rectIndex]!
       const stateIndex = baseRect.type === "state" ? baseRect.index : baseRect.index + 1
       const fill = baseRect.type === "state" ? 0x211f1a : reviewDeltaColor(states[stateIndex]?.deltaCorrect ?? 0)
       const visual = this.add.rectangle(initial.center, y + 23, initial.width, initial.height, fill).setOrigin(0.5)
@@ -728,7 +731,7 @@ export class MainScene extends Phaser.Scene {
       timeline.add(visual)
       rowVisuals.push(visual)
     })
-    this.reviewTimelineRows.push({ kind, y, baseRects, visuals: rowVisuals })
+    this.reviewTimelineRows.push({ kind, y, baseRects, visuals: rowVisuals, left: startX, right: startX + stripWidth })
     this.updateReviewTimelineGeometry()
   }
 
@@ -772,7 +775,7 @@ export class MainScene extends Phaser.Scene {
   private updateReviewTimelineGeometry(): void {
     this.reviewTimelineRows.forEach((row) => {
       const focus = this.reviewZoomSmoothedX?.kind === row.kind ? this.reviewZoomSmoothedX.x : undefined
-      const layouts = layoutTimelineRects(row.baseRects, focus, 30, 400, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
+      const layouts = layoutTimelineRects(row.baseRects, focus, row.left, row.right, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
       row.visuals.forEach((visual, index) => {
         const layout = layouts[index]
         if (layout === undefined) return
