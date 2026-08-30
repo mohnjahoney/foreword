@@ -6,6 +6,7 @@ import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
+import { TimelineExplorer } from "../core/timelineExplorer"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
 
@@ -77,9 +78,7 @@ export class MainScene extends Phaser.Scene {
   private reviewOriginalTiles: LetterTile[] = []
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
-  private reviewZoomTarget?: { kind: ReviewPathKind; x: number }
-  private reviewZoomSmoothedX?: { kind: ReviewPathKind; x: number }
-  private reviewZoomFrame?: number
+  private reviewExplorer?: TimelineExplorer<ReviewPathKind>
   private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; baseRects: TimelineRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number }> = []
   private magnificationMode: MagnificationMode = "center"
   private centerMagnificationButton!: Phaser.GameObjects.Rectangle
@@ -115,11 +114,9 @@ export class MainScene extends Phaser.Scene {
     this.reviewTimeline = undefined
     this.reviewReferencePath = []
     this.reviewPlaying = false
-    this.reviewZoomTarget = undefined
-    this.reviewZoomSmoothedX = undefined
     this.reviewTimelineRows = []
-    if (this.reviewZoomFrame !== undefined) window.cancelAnimationFrame(this.reviewZoomFrame)
-    this.reviewZoomFrame = undefined
+    this.reviewExplorer?.dispose()
+    this.reviewExplorer = undefined
     this.reviewTimer?.remove()
     this.reviewTimer = undefined
     this.puzzleCreationFailed = false
@@ -658,6 +655,7 @@ export class MainScene extends Phaser.Scene {
     this.reviewOverlay.add(this.add.text(215, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }).setOrigin(0.5))
     this.reviewBoard = this.add.container(0, 0)
     this.reviewOverlay.add(this.reviewBoard)
+    this.reviewExplorer = new TimelineExplorer<ReviewPathKind>(() => this.updateReviewTimelineGeometry(), { smoothing: DEFAULT_MAGNIFICATION_CONFIG.smoothing })
     const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.exitReviewMode(false))
     this.reviewOverlay.add(close)
@@ -736,9 +734,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private setReviewZoomFocus(kind: ReviewPathKind, x: number): void {
-    this.reviewZoomTarget = { kind, x }
-    if (this.reviewZoomSmoothedX?.kind !== kind) this.reviewZoomSmoothedX = { kind, x }
-    this.requestReviewZoomFrame()
+    this.reviewExplorer?.setPointer(kind, x)
   }
 
   private handleReviewPointerMove(pointer: Phaser.Input.Pointer): void {
@@ -746,36 +742,17 @@ export class MainScene extends Phaser.Scene {
     const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
     const row = this.reviewTimelineRows.find((candidate) => Math.abs(worldPoint.y - (candidate.y + 23)) <= 28)
     if (row === undefined) {
-      this.reviewZoomTarget = undefined
-      this.reviewZoomSmoothedX = undefined
-      this.updateReviewTimelineGeometry()
+      this.reviewExplorer?.clear()
       return
     }
     this.setReviewZoomFocus(row.kind, worldPoint.x)
   }
 
-  private requestReviewZoomFrame(): void {
-    if (this.reviewZoomFrame !== undefined) return
-    const animate = (): void => {
-      this.reviewZoomFrame = undefined
-      const target = this.reviewZoomTarget
-      const smoothed = this.reviewZoomSmoothedX
-      if (target === undefined || smoothed === undefined) {
-        this.reviewZoomSmoothedX = undefined
-        this.updateReviewTimelineGeometry()
-        return
-      }
-      smoothed.x += (target.x - smoothed.x) * DEFAULT_MAGNIFICATION_CONFIG.smoothing
-      this.updateReviewTimelineGeometry()
-      if (Math.abs(target.x - smoothed.x) > 0.1) this.reviewZoomFrame = window.requestAnimationFrame(animate)
-    }
-    this.reviewZoomFrame = window.requestAnimationFrame(animate)
-  }
-
   private updateReviewTimelineGeometry(): void {
     this.reviewTimelineRows.forEach((row) => {
-      const focus = this.reviewZoomSmoothedX?.kind === row.kind ? this.reviewZoomSmoothedX.x : undefined
-      const layouts = layoutTimelineRects(row.baseRects, focus, row.left, row.right, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
+      const focus = this.reviewExplorer?.getFocus()
+      const focusX = focus?.kind === row.kind ? focus.x : undefined
+      const layouts = layoutTimelineRects(row.baseRects, focusX, row.left, row.right, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
       row.visuals.forEach((visual, index) => {
         const layout = layouts[index]
         if (layout === undefined) return
@@ -840,10 +817,8 @@ export class MainScene extends Phaser.Scene {
   private exitReviewMode(keepState: boolean): void {
     this.stopReview()
     this.input.off("pointermove", this.handleReviewPointerMove, this)
-    if (this.reviewZoomFrame !== undefined) window.cancelAnimationFrame(this.reviewZoomFrame)
-    this.reviewZoomFrame = undefined
-    this.reviewZoomTarget = undefined
-    this.reviewZoomSmoothedX = undefined
+    this.reviewExplorer?.dispose()
+    this.reviewExplorer = undefined
     if (!keepState) this.applyTileState(this.reviewOriginalTiles)
     this.reviewOverlay?.destroy(true)
     this.reviewOverlay = undefined
