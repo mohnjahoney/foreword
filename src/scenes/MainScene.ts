@@ -661,6 +661,7 @@ export class MainScene extends Phaser.Scene {
     const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.exitReviewMode(false))
     this.reviewOverlay.add(close)
+    this.input.on("pointermove", this.handleReviewPointerMove, this)
     this.reviewTimeline = this.add.container(0, 0)
     this.reviewOverlay.add(this.reviewTimeline)
     this.buildReviewControls()
@@ -723,11 +724,7 @@ export class MainScene extends Phaser.Scene {
           this.reviewSelectedIndex = baseRect.index
           this.refreshReview()
         })
-      } else {
-        visual.setInteractive()
       }
-      visual.on("pointermove", (pointer: Phaser.Input.Pointer) => this.setReviewZoomFocus(kind, pointer.worldX))
-      visual.on("pointerout", () => this.clearReviewZoomFocus(kind))
       timeline.add(visual)
       rowVisuals.push(visual)
     })
@@ -741,11 +738,17 @@ export class MainScene extends Phaser.Scene {
     this.requestReviewZoomFrame()
   }
 
-  private clearReviewZoomFocus(kind: ReviewPathKind): void {
-    if (this.reviewZoomTarget?.kind !== kind) return
-    this.reviewZoomTarget = undefined
-    this.reviewZoomSmoothedX = undefined
-    this.updateReviewTimelineGeometry()
+  private handleReviewPointerMove(pointer: Phaser.Input.Pointer): void {
+    if (this.reviewOverlay === undefined) return
+    const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
+    const row = this.reviewTimelineRows.find((candidate) => Math.abs(worldPoint.y - (candidate.y + 23)) <= 28)
+    if (row === undefined) {
+      this.reviewZoomTarget = undefined
+      this.reviewZoomSmoothedX = undefined
+      this.updateReviewTimelineGeometry()
+      return
+    }
+    this.setReviewZoomFocus(row.kind, worldPoint.x)
   }
 
   private requestReviewZoomFrame(): void {
@@ -833,6 +836,11 @@ export class MainScene extends Phaser.Scene {
 
   private exitReviewMode(keepState: boolean): void {
     this.stopReview()
+    this.input.off("pointermove", this.handleReviewPointerMove, this)
+    if (this.reviewZoomFrame !== undefined) window.cancelAnimationFrame(this.reviewZoomFrame)
+    this.reviewZoomFrame = undefined
+    this.reviewZoomTarget = undefined
+    this.reviewZoomSmoothedX = undefined
     if (!keepState) this.applyTileState(this.reviewOriginalTiles)
     this.reviewOverlay?.destroy(true)
     this.reviewOverlay = undefined
