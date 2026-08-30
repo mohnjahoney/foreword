@@ -6,6 +6,7 @@ import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
+import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, layoutReviewCards, nearestReviewCardIndex, type ReviewCardRect } from "../core/reviewCards"
 import { TimelineExplorer } from "../core/timelineExplorer"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
@@ -79,10 +80,11 @@ export class MainScene extends Phaser.Scene {
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
   private reviewExplorer?: TimelineExplorer<ReviewPathKind>
-  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; baseRects: TimelineRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number }> = []
+  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; mode: MagnificationMode; baseRects: TimelineRect[] | ReviewCardRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number; focusCardIndex?: number; renderedFocusCardIndex?: number }> = []
   private magnificationMode: MagnificationMode = "center"
   private centerMagnificationButton!: Phaser.GameObjects.Rectangle
   private continuousMagnificationButton!: Phaser.GameObjects.Rectangle
+  private cardMagnificationButton!: Phaser.GameObjects.Rectangle
   private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
   private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
   private static readonly BUTTON_STROKE_COLOR = 0x756d5e
@@ -336,14 +338,17 @@ export class MainScene extends Phaser.Scene {
     yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
     yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
     const magnificationLabel = this.add.text(20, 300, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
-    this.centerMagnificationButton = this.add.rectangle(100, 350, 130, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.continuousMagnificationButton = this.add.rectangle(250, 350, 130, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const centerMagnificationText = this.add.text(100, 350, "TYPE A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
-    const continuousMagnificationText = this.add.text(250, 350, "TYPE B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    this.centerMagnificationButton = this.add.rectangle(65, 350, 112, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.continuousMagnificationButton = this.add.rectangle(190, 350, 112, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.cardMagnificationButton = this.add.rectangle(315, 350, 112, 30, this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const centerMagnificationText = this.add.text(65, 350, "A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    const continuousMagnificationText = this.add.text(190, 350, "B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    const cardMagnificationText = this.add.text(315, 350, "C · CARDS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
     this.centerMagnificationButton.on("pointerdown", () => this.setMagnificationMode("center"))
     this.continuousMagnificationButton.on("pointerdown", () => this.setMagnificationMode("continuous"))
+    this.cardMagnificationButton.on("pointerdown", () => this.setMagnificationMode("cards"))
     const note = this.add.text(20, 380, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
-    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, centerMagnificationText, continuousMagnificationText, note])
+    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
@@ -381,6 +386,7 @@ export class MainScene extends Phaser.Scene {
       this.devCountButtons.forEach((button) => button.setInteractive({ useHandCursor: true }))
       this.centerMagnificationButton.setInteractive({ useHandCursor: true })
       this.continuousMagnificationButton.setInteractive({ useHandCursor: true })
+      this.cardMagnificationButton.setInteractive({ useHandCursor: true })
     } else {
       this.devOverlay.disableInteractive()
       this.devPanelBackground.disableInteractive()
@@ -390,18 +396,20 @@ export class MainScene extends Phaser.Scene {
       this.devCountButtons.forEach((button) => button.disableInteractive())
       this.centerMagnificationButton.disableInteractive()
       this.continuousMagnificationButton.disableInteractive()
+      this.cardMagnificationButton.disableInteractive()
     }
   }
 
   private setMagnificationMode(mode: MagnificationMode): void {
     this.magnificationMode = mode
     this.updateMagnificationButtons()
-    if (this.reviewOverlay !== undefined) this.updateReviewTimelineGeometry()
+    if (this.reviewOverlay !== undefined) this.refreshReview()
   }
 
   private updateMagnificationButtons(): void {
     this.centerMagnificationButton?.setFillStyle(this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
     this.continuousMagnificationButton?.setFillStyle(this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
+    this.cardMagnificationButton?.setFillStyle(this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
   }
 
   private currentPuzzleSetup(): PuzzleSetup {
@@ -660,6 +668,7 @@ export class MainScene extends Phaser.Scene {
     close.on("pointerdown", () => this.exitReviewMode(false))
     this.reviewOverlay.add(close)
     this.input.on("pointermove", this.handleReviewPointerMove, this)
+    this.input.on("pointerup", this.handleReviewPointerUp, this)
     this.reviewTimeline = this.add.container(0, 0)
     this.reviewOverlay.add(this.reviewTimeline)
     this.buildReviewControls()
@@ -705,6 +714,10 @@ export class MainScene extends Phaser.Scene {
 
   private drawReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
     if (this.reviewTimeline === undefined) return
+    if (this.magnificationMode === "cards") {
+      this.drawCardReviewTimeline(states, label, y, kind)
+      return
+    }
     const timeline = this.reviewTimeline
     timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
     const largerStateCount = Math.max(this.playerPath.length, this.reviewReferencePath.length)
@@ -729,7 +742,43 @@ export class MainScene extends Phaser.Scene {
       timeline.add(visual)
       rowVisuals.push(visual)
     })
-    this.reviewTimelineRows.push({ kind, y, baseRects, visuals: rowVisuals, left: startX, right: startX + stripWidth })
+    this.reviewTimelineRows.push({ kind, y, mode: this.magnificationMode, baseRects, visuals: rowVisuals, left: startX, right: startX + stripWidth })
+    this.updateReviewTimelineGeometry()
+  }
+
+  private drawCardReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
+    if (this.reviewTimeline === undefined) return
+    const timeline = this.reviewTimeline
+    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
+    const largerCardCount = Math.max(this.playerPath.length, this.reviewReferencePath.length) * 2 - 1
+    const cardWidth = cardWidthForPath(largerCardCount, 344, DEFAULT_REVIEW_CARD_CONFIG)
+    const cardConfig = { ...DEFAULT_REVIEW_CARD_CONFIG, cardWidth }
+    const left = 43
+    const right = 387
+    const focusStateIndex = kind === "player"
+      ? (this.reviewSelectedPath === "player" ? this.reviewSelectedIndex : this.playerPath.length - 1)
+      : (this.reviewSelectedPath === "reference" ? this.reviewSelectedIndex : 0)
+    const focusCardIndex = Math.max(0, focusStateIndex * 2)
+    const baseRects = createReviewCardRects(states.length, left, right, cardConfig)
+    const initialLayouts = layoutReviewCards(baseRects, focusCardIndex, undefined, left, right, cardConfig)
+    const rowVisuals: Phaser.GameObjects.Rectangle[] = []
+    baseRects.forEach((baseRect, rectIndex) => {
+      const layout = initialLayouts[rectIndex]!
+      const stateIndex = baseRect.type === "state" ? baseRect.index : baseRect.index + 1
+      const fill = baseRect.type === "state" ? 0x211f1a : reviewDeltaColor(states[stateIndex]?.deltaCorrect ?? 0)
+      const visual = this.add.rectangle(layout.center, y + 23, layout.width, DEFAULT_MAGNIFICATION_CONFIG.baseHeight, fill).setOrigin(0.5)
+      if (baseRect.type === "state") {
+        visual.setInteractive(new Phaser.Geom.Rectangle(-9, -24, 18, 48), Phaser.Geom.Rectangle.Contains)
+        visual.on("pointerdown", () => {
+          this.reviewSelectedPath = kind
+          this.reviewSelectedIndex = stateIndex
+          this.refreshReview()
+        })
+      }
+      timeline.add(visual)
+      rowVisuals.push(visual)
+    })
+    this.reviewTimelineRows.push({ kind, y, mode: "cards", baseRects, visuals: rowVisuals, left, right, focusCardIndex, renderedFocusCardIndex: focusCardIndex })
     this.updateReviewTimelineGeometry()
   }
 
@@ -742,16 +791,41 @@ export class MainScene extends Phaser.Scene {
     const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
     const row = this.reviewTimelineRows.find((candidate) => Math.abs(worldPoint.y - (candidate.y + 23)) <= 28)
     if (row === undefined) {
-      this.reviewExplorer?.clear()
+      if (this.magnificationMode === "cards") this.reviewExplorer?.releaseAfter(2000)
+      else this.reviewExplorer?.clear()
       return
     }
     this.setReviewZoomFocus(row.kind, worldPoint.x)
+  }
+
+  private handleReviewPointerUp(): void {
+    if (this.magnificationMode === "cards") this.reviewExplorer?.releaseAfter(2000)
   }
 
   private updateReviewTimelineGeometry(): void {
     this.reviewTimelineRows.forEach((row) => {
       const focus = this.reviewExplorer?.getFocus()
       const focusX = focus?.kind === row.kind ? focus.x : undefined
+      if (row.mode === "cards") {
+        const cardRects = row.baseRects as ReviewCardRect[]
+        const focusCardIndex = focusX === undefined ? (row.focusCardIndex ?? 0) : nearestReviewCardIndex(cardRects, focusX)
+        const cardLayouts = layoutReviewCards(cardRects, focusCardIndex, focusX, row.left, row.right, { ...DEFAULT_REVIEW_CARD_CONFIG, cardWidth: cardRects[0]!.baseRight - cardRects[0]!.baseLeft })
+        const focusChanged = row.renderedFocusCardIndex !== focusCardIndex
+        row.visuals.forEach((visual, index) => {
+          const layout = cardLayouts[index]
+          if (layout === undefined) return
+          const targetX = layout.center
+          const targetY = row.y + 23 - DEFAULT_REVIEW_CARD_CONFIG.verticalLift * layout.verticalInfluence
+          if (focusChanged) {
+            this.tweens.killTweensOf(visual)
+            this.tweens.add({ targets: visual, x: targetX, y: targetY, width: layout.width, height: DEFAULT_MAGNIFICATION_CONFIG.baseHeight, duration: 180, delay: Math.abs(index - focusCardIndex) * 18, ease: "Sine.easeOut" })
+          } else {
+            visual.setPosition(targetX, targetY).setSize(layout.width, DEFAULT_MAGNIFICATION_CONFIG.baseHeight)
+          }
+        })
+        row.renderedFocusCardIndex = focusCardIndex
+        return
+      }
       const layouts = layoutTimelineRects(row.baseRects, focusX, row.left, row.right, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
       row.visuals.forEach((visual, index) => {
         const layout = layouts[index]
@@ -817,6 +891,7 @@ export class MainScene extends Phaser.Scene {
   private exitReviewMode(keepState: boolean): void {
     this.stopReview()
     this.input.off("pointermove", this.handleReviewPointerMove, this)
+    this.input.off("pointerup", this.handleReviewPointerUp, this)
     this.reviewExplorer?.dispose()
     this.reviewExplorer = undefined
     if (!keepState) this.applyTileState(this.reviewOriginalTiles)

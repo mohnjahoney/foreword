@@ -11,6 +11,7 @@ export class TimelineExplorer<K extends string> {
   private target?: ExplorerFocus<K>
   private smoothed?: ExplorerFocus<K>
   private frame?: number
+  private releaseTimer?: number
 
   constructor(
     private readonly onChange: (focus: ExplorerFocus<K> | undefined) => void,
@@ -22,22 +23,38 @@ export class TimelineExplorer<K extends string> {
   }
 
   setPointer(kind: K, x: number): void {
+    this.cancelRelease()
     this.target = { kind, x }
     if (this.smoothed?.kind !== kind) this.smoothed = { kind, x }
     this.scheduleFrame()
   }
 
   clear(): void {
+    this.cancelRelease()
     this.target = undefined
     this.smoothed = undefined
     this.onChange(undefined)
   }
 
+  releaseAfter(delayMs: number): void {
+    this.cancelRelease()
+    this.releaseTimer = window.setTimeout(() => {
+      this.releaseTimer = undefined
+      this.clear()
+    }, delayMs)
+  }
+
   dispose(): void {
+    this.cancelRelease()
     if (this.frame !== undefined) window.cancelAnimationFrame(this.frame)
     this.frame = undefined
     this.target = undefined
     this.smoothed = undefined
+  }
+
+  private cancelRelease(): void {
+    if (this.releaseTimer !== undefined) window.clearTimeout(this.releaseTimer)
+    this.releaseTimer = undefined
   }
 
   private scheduleFrame(): void {
