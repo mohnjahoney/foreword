@@ -5,6 +5,7 @@ import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
+import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
 
@@ -76,8 +77,13 @@ export class MainScene extends Phaser.Scene {
   private reviewOriginalTiles: LetterTile[] = []
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
-  private reviewZoomFocus?: { kind: ReviewPathKind; x: number }
-  private reviewZoomDots: Array<{ kind: ReviewPathKind; dot: Phaser.GameObjects.Arc; baseX: number; y: number }> = []
+  private reviewZoomTarget?: { kind: ReviewPathKind; x: number }
+  private reviewZoomSmoothedX?: { kind: ReviewPathKind; x: number }
+  private reviewZoomFrame?: number
+  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; baseRects: TimelineRect[]; visuals: Phaser.GameObjects.Rectangle[] }> = []
+  private magnificationMode: MagnificationMode = "center"
+  private centerMagnificationButton!: Phaser.GameObjects.Rectangle
+  private continuousMagnificationButton!: Phaser.GameObjects.Rectangle
   private static readonly ACTIVE_BUTTON_COLOR = 0x71845f
   private static readonly INACTIVE_BUTTON_COLOR = 0xc6bdae
   private static readonly BUTTON_STROKE_COLOR = 0x756d5e
@@ -109,8 +115,11 @@ export class MainScene extends Phaser.Scene {
     this.reviewTimeline = undefined
     this.reviewReferencePath = []
     this.reviewPlaying = false
-    this.reviewZoomFocus = undefined
-    this.reviewZoomDots = []
+    this.reviewZoomTarget = undefined
+    this.reviewZoomSmoothedX = undefined
+    this.reviewTimelineRows = []
+    if (this.reviewZoomFrame !== undefined) window.cancelAnimationFrame(this.reviewZoomFrame)
+    this.reviewZoomFrame = undefined
     this.reviewTimer?.remove()
     this.reviewTimer = undefined
     this.puzzleCreationFailed = false
@@ -300,7 +309,7 @@ export class MainScene extends Phaser.Scene {
     this.devOverlay = this.add.rectangle(0, 0, 430, 760, 0x000000, 0).setOrigin(0, 0).setDepth(49).setInteractive()
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
-    const panel = this.add.rectangle(0, 0, 380, 335, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
+    const panel = this.add.rectangle(0, 0, 380, 405, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1 })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
@@ -329,12 +338,20 @@ export class MainScene extends Phaser.Scene {
     greenPlus.on("pointerdown", () => this.adjustTileMinimum("green", 1))
     yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
     yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
-    const note = this.add.text(20, 285, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
-    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, note])
+    const magnificationLabel = this.add.text(20, 300, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
+    this.centerMagnificationButton = this.add.rectangle(100, 350, 130, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.continuousMagnificationButton = this.add.rectangle(250, 350, 130, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const centerMagnificationText = this.add.text(100, 350, "TYPE A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    const continuousMagnificationText = this.add.text(250, 350, "TYPE B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    this.centerMagnificationButton.on("pointerdown", () => this.setMagnificationMode("center"))
+    this.continuousMagnificationButton.on("pointerdown", () => this.setMagnificationMode("continuous"))
+    const note = this.add.text(20, 380, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, centerMagnificationText, continuousMagnificationText, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
     this.updateTileMinimumText()
+    this.updateMagnificationButtons()
     this.setDevPanelVisible(false)
     this.devPanelReady = true
   }
@@ -365,6 +382,8 @@ export class MainScene extends Phaser.Scene {
       this.devToggle.setInteractive({ useHandCursor: true })
       this.devGreenToggle.setInteractive({ useHandCursor: true })
       this.devCountButtons.forEach((button) => button.setInteractive({ useHandCursor: true }))
+      this.centerMagnificationButton.setInteractive({ useHandCursor: true })
+      this.continuousMagnificationButton.setInteractive({ useHandCursor: true })
     } else {
       this.devOverlay.disableInteractive()
       this.devPanelBackground.disableInteractive()
@@ -372,7 +391,20 @@ export class MainScene extends Phaser.Scene {
       this.devToggle.disableInteractive()
       this.devGreenToggle.disableInteractive()
       this.devCountButtons.forEach((button) => button.disableInteractive())
+      this.centerMagnificationButton.disableInteractive()
+      this.continuousMagnificationButton.disableInteractive()
     }
+  }
+
+  private setMagnificationMode(mode: MagnificationMode): void {
+    this.magnificationMode = mode
+    this.updateMagnificationButtons()
+    if (this.reviewOverlay !== undefined) this.updateReviewTimelineGeometry()
+  }
+
+  private updateMagnificationButtons(): void {
+    this.centerMagnificationButton?.setFillStyle(this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
+    this.continuousMagnificationButton?.setFillStyle(this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
   }
 
   private currentPuzzleSetup(): PuzzleSetup {
@@ -658,7 +690,7 @@ export class MainScene extends Phaser.Scene {
   private refreshReview(): void {
     if (this.reviewTimeline === undefined) return
     this.reviewTimeline.removeAll(true)
-    this.reviewZoomDots = []
+    this.reviewTimelineRows = []
     if (this.reviewSelectedPath === "player") {
       const referenceStart = this.playerPath[this.reviewSelectedIndex]?.tiles ?? this.reviewOriginalTiles
       this.reviewReferencePath = createReferencePath(this.puzzle, referenceStart)
@@ -676,56 +708,77 @@ export class MainScene extends Phaser.Scene {
     if (this.reviewTimeline === undefined) return
     const timeline = this.reviewTimeline
     const startX = 30
-    const maxSteps = Math.max(this.playerPath.length, this.reviewReferencePath.length) - 1
-    const stepWidth = Math.min(34, 370 / Math.max(1, maxSteps))
     timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
-    const touchStrip = this.add.rectangle(30 + (states.length - 1) * stepWidth / 2, y + 25, Math.max(30, (states.length - 1) * stepWidth + 24), 22, 0xffffff, 0).setInteractive()
-    touchStrip.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      this.reviewZoomFocus = { kind, x: pointer.worldX }
-      this.updateReviewZoom()
-    })
-    touchStrip.on("pointerout", () => {
-      if (this.reviewZoomFocus?.kind !== kind) return
-      this.reviewZoomFocus = undefined
-      this.updateReviewZoom()
-    })
-    timeline.add(touchStrip)
-    const baseXs = states.map((_state, index) => startX + index * stepWidth)
-    const positions = this.reviewZoomFocus?.kind === kind ? getZoomedPositions(baseXs, this.reviewZoomFocus.x) : baseXs
-    states.forEach((state, index) => {
-      const x = positions[index] ?? baseXs[index]!
-      if (index > 0) {
-        const deltaColor = reviewDeltaColor(state.deltaCorrect)
-        timeline.add(this.add.rectangle(x - stepWidth / 2, y + 23, Math.max(3, stepWidth - 2), 14, deltaColor).setOrigin(0.5))
+    const baseRects = createTimelineRects(states.length, startX, 370, DEFAULT_MAGNIFICATION_CONFIG)
+    const rowVisuals: Phaser.GameObjects.Rectangle[] = []
+    baseRects.forEach((baseRect, rectIndex) => {
+      const initial = layoutTimelineRects(baseRects, undefined, startX, 400, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)[rectIndex]!
+      const stateIndex = baseRect.type === "state" ? baseRect.index : baseRect.index + 1
+      const fill = baseRect.type === "state" ? 0x211f1a : reviewDeltaColor(states[stateIndex]?.deltaCorrect ?? 0)
+      const visual = this.add.rectangle(initial.center, y + 23, initial.width, initial.height, fill).setOrigin(0.5)
+      if (baseRect.type === "state") {
+        visual.setInteractive(new Phaser.Geom.Rectangle(-9, -24, 18, 48), Phaser.Geom.Rectangle.Contains)
+        visual.on("pointerdown", () => {
+          this.reviewSelectedPath = kind
+          this.reviewSelectedIndex = baseRect.index
+          this.refreshReview()
+        })
+      } else {
+        visual.setInteractive()
       }
-      const node = this.add.circle(x, y, 2, 0x211f1a).setInteractive(new Phaser.Geom.Circle(0, 0, 9), Phaser.Geom.Circle.Contains)
-      this.reviewZoomDots.push({ kind, dot: node, baseX: baseXs[index]!, y })
-      node.on("pointerdown", () => {
-        this.reviewSelectedPath = kind
-        this.reviewSelectedIndex = index
-        this.refreshReview()
-      })
-      timeline.add(node)
+      visual.on("pointermove", (pointer: Phaser.Input.Pointer) => this.setReviewZoomFocus(kind, pointer.worldX))
+      visual.on("pointerout", () => this.clearReviewZoomFocus(kind))
+      timeline.add(visual)
+      rowVisuals.push(visual)
     })
+    this.reviewTimelineRows.push({ kind, y, baseRects, visuals: rowVisuals })
+    this.updateReviewTimelineGeometry()
   }
 
-  private updateReviewZoom(): void {
-    const byKind = new Map<ReviewPathKind, typeof this.reviewZoomDots>()
-    this.reviewZoomDots.forEach((entry) => {
-      const dots = byKind.get(entry.kind) ?? []
-      dots.push(entry)
-      byKind.set(entry.kind, dots)
-    })
-    byKind.forEach((dots, kind) => {
-      const baseXs = dots.map((entry) => entry.baseX)
-      const positions = this.reviewZoomFocus?.kind === kind ? getZoomedPositions(baseXs, this.reviewZoomFocus.x) : baseXs
-      dots.forEach((entry, index) => {
-        const distance = this.reviewZoomFocus?.kind === kind ? Math.abs(entry.baseX - this.reviewZoomFocus.x) : Infinity
-        const influence = Math.max(0, 1 - distance / 30)
-        entry.dot.setPosition(positions[index] ?? entry.baseX, entry.y - 16 * influence)
-        entry.dot.setRadius(2 + 6 * influence)
-        entry.dot.setFillStyle(influence > 0 ? 0xfaf6e9 : 0x211f1a, 1)
-        entry.dot.setStrokeStyle(influence > 0 ? 2 : 0, 0x211f1a, 1)
+  private setReviewZoomFocus(kind: ReviewPathKind, x: number): void {
+    this.reviewZoomTarget = { kind, x }
+    if (this.reviewZoomSmoothedX?.kind !== kind) this.reviewZoomSmoothedX = { kind, x }
+    this.requestReviewZoomFrame()
+  }
+
+  private clearReviewZoomFocus(kind: ReviewPathKind): void {
+    if (this.reviewZoomTarget?.kind !== kind) return
+    this.reviewZoomTarget = undefined
+    this.reviewZoomSmoothedX = undefined
+    this.updateReviewTimelineGeometry()
+  }
+
+  private requestReviewZoomFrame(): void {
+    if (this.reviewZoomFrame !== undefined) return
+    const animate = (): void => {
+      this.reviewZoomFrame = undefined
+      const target = this.reviewZoomTarget
+      const smoothed = this.reviewZoomSmoothedX
+      if (target === undefined || smoothed === undefined) {
+        this.reviewZoomSmoothedX = undefined
+        this.updateReviewTimelineGeometry()
+        return
+      }
+      smoothed.x += (target.x - smoothed.x) * DEFAULT_MAGNIFICATION_CONFIG.smoothing
+      this.updateReviewTimelineGeometry()
+      if (Math.abs(target.x - smoothed.x) > 0.1) this.reviewZoomFrame = window.requestAnimationFrame(animate)
+    }
+    this.reviewZoomFrame = window.requestAnimationFrame(animate)
+  }
+
+  private updateReviewTimelineGeometry(): void {
+    this.reviewTimelineRows.forEach((row) => {
+      const focus = this.reviewZoomSmoothedX?.kind === row.kind ? this.reviewZoomSmoothedX.x : undefined
+      const layouts = layoutTimelineRects(row.baseRects, focus, 30, 400, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
+      row.visuals.forEach((visual, index) => {
+        const layout = layouts[index]
+        if (layout === undefined) return
+        const verticalLift = DEFAULT_MAGNIFICATION_CONFIG.maxVerticalDisplacement * layout.influence
+        visual.setPosition(layout.center, row.y + 23 - verticalLift).setSize(layout.width, layout.height)
+        if (layout.type === "state") {
+          visual.setFillStyle(layout.influence > 0 ? 0xfaf6e9 : 0x211f1a, 1)
+          visual.setStrokeStyle(layout.influence > 0 ? 2 : 0, 0x211f1a, 1)
+        }
       })
     })
   }
@@ -851,23 +904,6 @@ function reviewDeltaColor(delta: number): number {
   if (delta === 1) return 0xb4c59d
   if (delta < 0) return 0xd49b86
   return 0xc6bdae
-}
-
-function getZoomedPositions(baseXs: number[], focusX: number): number[] {
-  if (baseXs.length < 2) return baseXs
-  const radii = baseXs.map((baseX) => 2 + 6 * Math.max(0, 1 - Math.abs(baseX - focusX) / 30))
-  const positions = baseXs.map((baseX) => {
-    const influence = Math.max(0, 1 - Math.abs(baseX - focusX) / 30)
-    return focusX + (baseX - focusX) * (1 + 0.6 * influence)
-  })
-  for (let index = 1; index < positions.length; index += 1) {
-    positions[index] = Math.max(positions[index]!, positions[index - 1]! + Math.max(3, radii[index - 1]! + radii[index]! + 6))
-  }
-  const rightOverflow = positions.at(-1)! - baseXs.at(-1)!
-  if (rightOverflow > 0) positions.forEach((_position, index) => { positions[index] = positions[index]! - rightOverflow })
-  const leftOverflow = baseXs[0]! - positions[0]!
-  if (leftOverflow > 0) positions.forEach((_position, index) => { positions[index] = positions[index]! + leftOverflow })
-  return positions
 }
 
 function createIconLabel(
