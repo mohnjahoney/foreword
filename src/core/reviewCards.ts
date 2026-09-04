@@ -14,23 +14,20 @@ export interface ReviewCardLayout extends ReviewCardRect {
 
 export interface ReviewCardConfig {
   cardWidth: number
-  maxSpacing: number
-  adjacentSpacing: number
-  restSpacing: number
   verticalLift: number
+  sideMargin: number
 }
 
 export const DEFAULT_REVIEW_CARD_CONFIG: ReviewCardConfig = {
   cardWidth: 30,
-  maxSpacing: 34,
-  adjacentSpacing: 17,
-  restSpacing: 0,
   verticalLift: 8,
+  sideMargin: 12,
 }
 
-export function cardWidthForPath(cardCount: number, maxWidth: number, config = DEFAULT_REVIEW_CARD_CONFIG): number {
-  if (cardCount <= 0) return config.cardWidth
-  return Math.min(config.cardWidth, maxWidth)
+export function cardWidthForPath(_cardCount: number, maxWidth: number, config = DEFAULT_REVIEW_CARD_CONFIG): number {
+  const cardCount = Math.max(1, _cardCount)
+  const widthThatPreservesFocusGaps = (2 * (maxWidth - 2 * config.sideMargin - 8)) / (cardCount + 3)
+  return Math.min(config.cardWidth, maxWidth, widthThatPreservesFocusGaps)
 }
 
 export function createReviewCardRects(
@@ -41,79 +38,132 @@ export function createReviewCardRects(
 ): ReviewCardRect[] {
   const cardCount = Math.max(0, stateCount * 2 - 1)
   if (cardCount === 0) return []
+
   const cardWidth = Math.min(config.cardWidth, right - left)
-  const restAdvance = Math.min(cardWidth * 0.48, cardCount === 1 ? 0 : (right - left - cardWidth) / (cardCount - 1))
-  const totalWidth = cardWidth + Math.max(0, cardCount - 1) * restAdvance
-  let cursor = right - totalWidth
+  const focusPositions = createFocusPositions(cardCount, left, right, cardWidth, config)
+  const restPositions = positionsForFocus(focusPositions, cardCount - 1, cardWidth)
   const rects: ReviewCardRect[] = []
+
   for (let cardIndex = 0; cardIndex < cardCount; cardIndex += 1) {
     const type = cardIndex % 2 === 0 ? "state" : "transition"
-    rects.push({ type, index: type === "state" ? cardIndex / 2 : (cardIndex - 1) / 2, cardIndex, baseLeft: cursor, baseRight: cursor + cardWidth })
-    if (cardIndex < cardCount - 1) cursor += restAdvance
+    const center = restPositions[cardIndex]!
+    rects.push({
+      type,
+      index: type === "state" ? cardIndex / 2 : (cardIndex - 1) / 2,
+      cardIndex,
+      baseLeft: center - cardWidth / 2,
+      baseRight: center + cardWidth / 2,
+    })
   }
+
   return rects
 }
 
-export function restFocusX(rects: readonly ReviewCardRect[], focusCardIndex: number): number | undefined {
-  const rect = rects.find((candidate) => candidate.cardIndex === focusCardIndex)
-  return rect === undefined ? undefined : (rect.baseLeft + rect.baseRight) / 2
+export function focusCardIndexAtX(
+  cardCount: number,
+  left: number,
+  right: number,
+  x: number,
+  config = DEFAULT_REVIEW_CARD_CONFIG,
+): number {
+  if (cardCount <= 1) return 0
+  const cardWidth = Math.min(config.cardWidth, right - left)
+  const focusPositions = createFocusPositions(cardCount, left, right, cardWidth, config)
+  const clampedX = clamp(x, focusPositions[0]!, focusPositions.at(-1)!)
+
+  return focusPositions.reduce((nearest, position, index) => {
+    return Math.abs(position - clampedX) < Math.abs(focusPositions[nearest]! - clampedX) ? index : nearest
+  }, 0)
 }
 
 export function layoutReviewCards(
   rects: readonly ReviewCardRect[],
-  focusCardIndex: number,
+  restFocusCardIndex: number,
   pointerX: number | undefined,
   left: number,
   right: number,
   config = DEFAULT_REVIEW_CARD_CONFIG,
 ): ReviewCardLayout[] {
   if (rects.length === 0) return []
-  const focus = Math.max(0, Math.min(rects.length - 1, focusCardIndex))
+
   const cardWidth = rects[0]!.baseRight - rects[0]!.baseLeft
+  const focusPositions = createFocusPositions(rects.length, left, right, cardWidth, config)
+  const restFocus = clampIndex(restFocusCardIndex, rects.length)
+
   if (pointerX === undefined) {
-    return rects.map((rect) => ({ ...rect, left: rect.baseLeft, right: rect.baseRight, width: cardWidth, center: (rect.baseLeft + rect.baseRight) / 2, verticalInfluence: 0 }))
+    return makeLayouts(rects, positionsForFocus(focusPositions, restFocus, cardWidth), 0, cardWidth)
   }
-  const focusX = pointerX ?? restFocusX(rects, focus) ?? (left + right) / 2
-  const restAdvance = deriveRestAdvance(rects)
-  const rawGaps = rects.slice(0, -1).map((_rect, index) => gapForBoundary(index, focus, config, restAdvance))
-  const focusGapTotal = rawGaps.reduce((total, gap, index) => total + (isFocusGap(index, focus) ? gap : 0), 0)
-  const nonFocusGapCount = rawGaps.filter((_gap, index) => !isFocusGap(index, focus)).length
-  const availableSpan = right - left - cardWidth
-  const nonFocusGap = Math.min(config.restSpacing || restAdvance, nonFocusGapCount === 0 ? 0 : Math.max(0, (availableSpan - cardWidth - focusGapTotal) / nonFocusGapCount))
-  const gaps = rawGaps.map((gap, index) => isFocusGap(index, focus) ? gap : nonFocusGap)
-  const positions = new Array<number>(rects.length)
-  positions[focus] = focusX - cardWidth / 2
-  for (let index = focus - 1; index >= 0; index -= 1) positions[index] = positions[index + 1]! - gaps[index]!
-  for (let index = focus + 1; index < rects.length; index += 1) positions[index] = positions[index - 1]! + gaps[index - 1]!
-  const minShift = left - positions[0]!
-  const maxShift = right - (positions.at(-1)! + cardWidth)
-  const shift = Math.max(minShift, Math.min(maxShift, 0))
-  return rects.map((rect, index) => {
-    const cardLeft = positions[index]! + shift
-    const distance = Math.abs(index - focus)
-    return { ...rect, left: cardLeft, right: cardLeft + cardWidth, width: cardWidth, center: cardLeft + cardWidth / 2, verticalInfluence: distance === 0 ? 1 : distance === 1 ? 0.45 : 0 }
+
+  const clampedX = clamp(pointerX, focusPositions[0]!, focusPositions.at(-1)!)
+  const upperIndex = focusPositions.findIndex((position) => position >= clampedX)
+  const upper = upperIndex === -1 ? focusPositions.length - 1 : upperIndex
+  const lower = Math.max(0, upper - 1)
+  const span = focusPositions[upper]! - focusPositions[lower]!
+  const amount = span === 0 ? 0 : (clampedX - focusPositions[lower]!) / span
+  const lowerPositions = positionsForFocus(focusPositions, lower, cardWidth)
+  const upperPositions = positionsForFocus(focusPositions, upper, cardWidth)
+  const positions = lowerPositions.map((position, index) => position + (upperPositions[index]! - position) * amount)
+  const continuousFocus = lower + amount
+
+  return makeLayouts(rects, positions, continuousFocus, cardWidth)
+}
+
+function createFocusPositions(
+  cardCount: number,
+  left: number,
+  right: number,
+  cardWidth: number,
+  config: ReviewCardConfig,
+): number[] {
+  const shift = sideShiftForCardWidth(cardWidth)
+  const first = left + cardWidth / 2 + config.sideMargin + shift
+  const last = right - cardWidth / 2 - config.sideMargin - shift
+  if (cardCount <= 1) return [(first + last) / 2]
+
+  // Keep a small overlap at rest even for short paths. Longer paths naturally
+  // pack more tightly as the available width is shared by more focus points.
+  const advance = Math.min(cardWidth / 2, (last - first) / (cardCount - 1))
+  const span = advance * (cardCount - 1)
+  const start = (left + right - span) / 2
+  return Array.from({ length: cardCount }, (_value, index) => start + index * advance)
+}
+
+function positionsForFocus(focusPositions: readonly number[], focusIndex: number, cardWidth: number): number[] {
+  const shift = sideShiftForCardWidth(cardWidth)
+  return focusPositions.map((position, index) => {
+    if (index < focusIndex) return position - shift
+    if (index > focusIndex) return position + shift
+    return position
   })
 }
 
-export function nearestReviewCardIndex(rects: readonly ReviewCardRect[], x: number): number {
-  return rects.reduce((nearest, rect, index) => {
-    const nearestDistance = Math.abs((rects[nearest]!.baseLeft + rects[nearest]!.baseRight) / 2 - x)
-    const distance = Math.abs((rect.baseLeft + rect.baseRight) / 2 - x)
-    return distance < nearestDistance ? index : nearest
-  }, 0)
+function sideShiftForCardWidth(cardWidth: number): number {
+  return cardWidth / 2 + 4
 }
 
-function gapForBoundary(index: number, focus: number, config: ReviewCardConfig, restAdvance: number): number {
-  if (isFocusGap(index, focus)) return config.maxSpacing
-  if (Math.abs(index - focus) === 1 || Math.abs(index + 1 - focus) === 1) return config.adjacentSpacing
-  return config.restSpacing || restAdvance
+function makeLayouts(
+  rects: readonly ReviewCardRect[],
+  centers: readonly number[],
+  continuousFocus: number,
+  cardWidth: number,
+): ReviewCardLayout[] {
+  return rects.map((rect, index) => {
+    const center = centers[index]!
+    return {
+      ...rect,
+      left: center - cardWidth / 2,
+      right: center + cardWidth / 2,
+      width: cardWidth,
+      center,
+      verticalInfluence: clamp(1 - Math.abs(index - continuousFocus), 0, 1),
+    }
+  })
 }
 
-function isFocusGap(index: number, focus: number): boolean {
-  return index === focus - 1 || index === focus
+function clampIndex(index: number, length: number): number {
+  return Math.max(0, Math.min(length - 1, index))
 }
 
-function deriveRestAdvance(rects: readonly ReviewCardRect[]): number {
-  if (rects.length < 2) return 0
-  return Math.max(0, rects[1]!.baseLeft - rects[0]!.baseLeft)
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value))
 }

@@ -1,4 +1,4 @@
-export type MagnificationMode = "center" | "continuous"
+export type MagnificationMode = "center" | "continuous" | "cards"
 export type TimelineRectType = "state" | "transition"
 
 export interface MagnificationConfig {

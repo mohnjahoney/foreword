@@ -6,12 +6,12 @@ import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
-import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, layoutReviewCards, nearestReviewCardIndex, type ReviewCardRect } from "../core/reviewCards"
+import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, focusCardIndexAtX, layoutReviewCards, type ReviewCardRect } from "../core/reviewCards"
 import { TimelineExplorer } from "../core/timelineExplorer"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { configureLogicalCamera } from "../style/rendering"
 
-const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae } as const
+const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
 const CELL_SIZE = 52
 const CELL_GAP = 7
 const ROW_LEFT = 75
@@ -80,7 +80,7 @@ export class MainScene extends Phaser.Scene {
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
   private reviewExplorer?: TimelineExplorer<ReviewPathKind>
-  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; mode: MagnificationMode; baseRects: TimelineRect[] | ReviewCardRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number; focusCardIndex?: number; renderedFocusCardIndex?: number }> = []
+  private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; mode: MagnificationMode; baseRects: TimelineRect[] | ReviewCardRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number; focusCardIndex?: number }> = []
   private magnificationMode: MagnificationMode = "center"
   private centerMagnificationButton!: Phaser.GameObjects.Rectangle
   private continuousMagnificationButton!: Phaser.GameObjects.Rectangle
@@ -173,7 +173,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
-    this.add.rectangle(285, 535, 115, 168, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+    this.add.rectangle(285, 535, 115, 150, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
     const nextButton = this.add.rectangle(295, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.add.image(317, 562, "foreword-arrow-right").setDisplaySize(25, 25).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
@@ -767,18 +767,26 @@ export class MainScene extends Phaser.Scene {
       const stateIndex = baseRect.type === "state" ? baseRect.index : baseRect.index + 1
       const fill = baseRect.type === "state" ? 0x211f1a : reviewDeltaColor(states[stateIndex]?.deltaCorrect ?? 0)
       const visual = this.add.rectangle(layout.center, y + 23, layout.width, DEFAULT_MAGNIFICATION_CONFIG.baseHeight, fill).setOrigin(0.5)
-      if (baseRect.type === "state") {
-        visual.setInteractive(new Phaser.Geom.Rectangle(-9, -24, 18, 48), Phaser.Geom.Rectangle.Contains)
-        visual.on("pointerdown", () => {
-          this.reviewSelectedPath = kind
-          this.reviewSelectedIndex = stateIndex
-          this.refreshReview()
-        })
-      }
+      const hitHeight = 48
+      const hitTop = (DEFAULT_MAGNIFICATION_CONFIG.baseHeight - hitHeight) / 2
+      visual.setInteractive(new Phaser.Geom.Rectangle(0, hitTop, layout.width, hitHeight), Phaser.Geom.Rectangle.Contains)
+      visual.on("pointerover", () => {
+        visual.setFillStyle(COLORS.reviewHover, 1)
+        visual.setStrokeStyle(2, 0x211f1a, 1)
+      })
+      visual.on("pointerout", () => {
+        visual.setFillStyle(fill, 1)
+        visual.setStrokeStyle(0, 0x211f1a, 1)
+      })
+      visual.on("pointerdown", () => {
+        this.reviewSelectedPath = kind
+        this.reviewSelectedIndex = stateIndex
+        this.refreshReview()
+      })
       timeline.add(visual)
       rowVisuals.push(visual)
     })
-    this.reviewTimelineRows.push({ kind, y, mode: "cards", baseRects, visuals: rowVisuals, left, right, focusCardIndex, renderedFocusCardIndex: focusCardIndex })
+    this.reviewTimelineRows.push({ kind, y, mode: "cards", baseRects, visuals: rowVisuals, left, right, focusCardIndex })
     this.updateReviewTimelineGeometry()
   }
 
@@ -808,22 +816,17 @@ export class MainScene extends Phaser.Scene {
       const focusX = focus?.kind === row.kind ? focus.x : undefined
       if (row.mode === "cards") {
         const cardRects = row.baseRects as ReviewCardRect[]
-        const focusCardIndex = focusX === undefined ? (row.focusCardIndex ?? 0) : nearestReviewCardIndex(cardRects, focusX)
+        const focusCardIndex = focusX === undefined
+          ? (row.focusCardIndex ?? 0)
+          : focusCardIndexAtX(cardRects.length, row.left, row.right, focusX, { ...DEFAULT_REVIEW_CARD_CONFIG, cardWidth: cardRects[0]!.baseRight - cardRects[0]!.baseLeft })
         const cardLayouts = layoutReviewCards(cardRects, focusCardIndex, focusX, row.left, row.right, { ...DEFAULT_REVIEW_CARD_CONFIG, cardWidth: cardRects[0]!.baseRight - cardRects[0]!.baseLeft })
-        const focusChanged = row.renderedFocusCardIndex !== focusCardIndex
         row.visuals.forEach((visual, index) => {
           const layout = cardLayouts[index]
           if (layout === undefined) return
           const targetX = layout.center
           const targetY = row.y + 23 - DEFAULT_REVIEW_CARD_CONFIG.verticalLift * layout.verticalInfluence
-          if (focusChanged) {
-            this.tweens.killTweensOf(visual)
-            this.tweens.add({ targets: visual, x: targetX, y: targetY, width: layout.width, height: DEFAULT_MAGNIFICATION_CONFIG.baseHeight, duration: 180, delay: Math.abs(index - focusCardIndex) * 18, ease: "Sine.easeOut" })
-          } else {
-            visual.setPosition(targetX, targetY).setSize(layout.width, DEFAULT_MAGNIFICATION_CONFIG.baseHeight)
-          }
+          visual.setPosition(targetX, targetY).setSize(layout.width, DEFAULT_MAGNIFICATION_CONFIG.baseHeight)
         })
-        row.renderedFocusCardIndex = focusCardIndex
         return
       }
       const layouts = layoutTimelineRects(row.baseRects, focusX, row.left, row.right, this.magnificationMode, DEFAULT_MAGNIFICATION_CONFIG)
