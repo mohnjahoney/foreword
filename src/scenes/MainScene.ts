@@ -9,7 +9,7 @@ import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects,
 import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, focusCardIndexAtX, layoutReviewCards, type ReviewCardRect } from "../core/reviewCards"
 import { TimelineExplorer } from "../core/timelineExplorer"
 import { ANSWER_WORDS, isAllowedWord } from "../core/words"
-import { configureLogicalCamera } from "../style/rendering"
+import { configureLogicalCamera, RENDER_SCALE } from "../style/rendering"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
 const CELL_SIZE = 52
@@ -77,11 +77,14 @@ export class MainScene extends Phaser.Scene {
   private reviewSelectedPath: ReviewPathKind = "player"
   private reviewSelectedIndex = 0
   private reviewOriginalTiles: LetterTile[] = []
+  private reviewTileTexts: Phaser.GameObjects.Text[] = []
+  private reviewSwapTween?: Phaser.Tweens.Tween
+  private reviewSwapAnimating = false
   private reviewPlaying = false
   private reviewTimer?: Phaser.Time.TimerEvent
   private reviewExplorer?: TimelineExplorer<ReviewPathKind>
   private reviewTimelineRows: Array<{ kind: ReviewPathKind; y: number; mode: MagnificationMode; baseRects: TimelineRect[] | ReviewCardRect[]; visuals: Phaser.GameObjects.Rectangle[]; left: number; right: number; focusCardIndex?: number }> = []
-  private magnificationMode: MagnificationMode = "center"
+  private magnificationMode: MagnificationMode = "cards"
   private centerMagnificationButton!: Phaser.GameObjects.Rectangle
   private continuousMagnificationButton!: Phaser.GameObjects.Rectangle
   private cardMagnificationButton!: Phaser.GameObjects.Rectangle
@@ -114,6 +117,9 @@ export class MainScene extends Phaser.Scene {
     this.reviewOverlay = undefined
     this.reviewBoard = undefined
     this.reviewTimeline = undefined
+    this.reviewTileTexts = []
+    this.reviewSwapTween = undefined
+    this.reviewSwapAnimating = false
     this.reviewReferencePath = []
     this.reviewPlaying = false
     this.reviewTimelineRows = []
@@ -142,14 +148,14 @@ export class MainScene extends Phaser.Scene {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
     }
-    this.add.text(30, 28, "4oreword", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold" })
-    const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
+    this.add.text(30, 28, "4oreword", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold", resolution: RENDER_SCALE })
+    const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
     devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
 
-    this.add.text(215, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }).setOrigin(0.5)
+    this.add.text(215, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     if (this.puzzleCreationFailed) {
-      this.add.text(31, 235, "NO PUZZLE FOUND", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold" })
-      this.add.text(31, 265, "Try reducing the constraints in DEV.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 360 } })
+      this.add.text(31, 235, "NO PUZZLE FOUND", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", resolution: RENDER_SCALE })
+      this.add.text(31, 265, "Try reducing the constraints in DEV.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 360 }, resolution: RENDER_SCALE })
     } else {
       this.buildBoard()
     }
@@ -162,7 +168,7 @@ export class MainScene extends Phaser.Scene {
 
   private buildNewPuzzleButton(): void {
     const button = this.add.rectangle(105, 708, 220, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(215, 727, `NEW PUZZLE  ·  ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.add.text(215, 727, `NEW PUZZLE  ·  ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerdown", () => this.scene.restart({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
@@ -180,12 +186,12 @@ export class MainScene extends Phaser.Scene {
     const resetButton = this.add.rectangle(345, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     createIconLabel(this, 367, 562, "reset")
     resetButton.on("pointerdown", () => this.resetPuzzle())
-    this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0, 0.5)
-    this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
-    this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(1, 0.5)
+    this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
+    this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
+    this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
+    this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
     const reviewButton = this.add.rectangle(295, 650, 95, 28, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(342, 664, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0.5).setDepth(1)
+    this.add.text(342, 664, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     reviewButton.on("pointerdown", () => this.enterReviewMode())
     this.updateMoveInfo()
   }
@@ -309,45 +315,45 @@ export class MainScene extends Phaser.Scene {
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
     const panel = this.add.rectangle(0, 0, 380, 405, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
-    const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1 })
-    const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
+    const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
-    const toggleLabel = this.add.text(20, 68, "Each row shares a letter with target", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 } })
+    const toggleLabel = this.add.text(20, 68, "Each row shares a letter with target", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 }, resolution: RENDER_SCALE })
     this.devToggle = this.add.rectangle(330, 73, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
     this.devToggle.on("pointerdown", () => {
       this.requireTargetLetterInEachRow = !this.requireTargetLetterInEachRow
       this.updateDevToggle()
     })
-    const greenLabel = this.add.text(20, 122, "Each row has at least one green tile", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 } })
+    const greenLabel = this.add.text(20, 122, "Each row has at least one green tile", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", wordWrap: { width: 285 }, resolution: RENDER_SCALE })
     this.devGreenToggle = this.add.rectangle(330, 127, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
     this.devGreenToggle.on("pointerdown", () => {
       this.requireGreenTileInEachRow = !this.requireGreenTileInEachRow
       this.updateDevToggle()
     })
-    const greenCountLabel = this.add.text(20, 180, "Minimum total green tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
-    const yellowCountLabel = this.add.text(20, 235, "Minimum total yellow tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
-    this.devGreenCountText = this.add.text(310, 180, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(0.5)
-    this.devYellowCountText = this.add.text(310, 235, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold" }).setOrigin(0.5)
-    const greenMinus = this.add.text(270, 180, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
-    const greenPlus = this.add.text(350, 180, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
-    const yellowMinus = this.add.text(270, 235, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
-    const yellowPlus = this.add.text(350, 235, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold" }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const greenCountLabel = this.add.text(20, 180, "Minimum total green tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
+    const yellowCountLabel = this.add.text(20, 235, "Minimum total yellow tiles", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
+    this.devGreenCountText = this.add.text(310, 180, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.devYellowCountText = this.add.text(310, 235, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const greenMinus = this.add.text(270, 180, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const greenPlus = this.add.text(350, 180, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const yellowMinus = this.add.text(270, 235, "−", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
+    const yellowPlus = this.add.text(350, 235, "+", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setPadding(10, 8).setInteractive({ useHandCursor: true })
     this.devCountButtons = [greenMinus, greenPlus, yellowMinus, yellowPlus]
     greenMinus.on("pointerdown", () => this.adjustTileMinimum("green", -1))
     greenPlus.on("pointerdown", () => this.adjustTileMinimum("green", 1))
     yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
     yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
-    const magnificationLabel = this.add.text(20, 300, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px" })
+    const magnificationLabel = this.add.text(20, 300, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
     this.centerMagnificationButton = this.add.rectangle(65, 350, 112, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.continuousMagnificationButton = this.add.rectangle(190, 350, 112, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.cardMagnificationButton = this.add.rectangle(315, 350, 112, 30, this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const centerMagnificationText = this.add.text(65, 350, "A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
-    const continuousMagnificationText = this.add.text(190, 350, "B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
-    const cardMagnificationText = this.add.text(315, 350, "C · CARDS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5)
+    const centerMagnificationText = this.add.text(65, 350, "A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const continuousMagnificationText = this.add.text(190, 350, "B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const cardMagnificationText = this.add.text(315, 350, "C · CARDS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     this.centerMagnificationButton.on("pointerdown", () => this.setMagnificationMode("center"))
     this.continuousMagnificationButton.on("pointerdown", () => this.setMagnificationMode("continuous"))
     this.cardMagnificationButton.on("pointerdown", () => this.setMagnificationMode("cards"))
-    const note = this.add.text(20, 380, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 } })
+    const note = this.add.text(20, 380, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 }, resolution: RENDER_SCALE })
     this.devPanel.add([panel, heading, close, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note])
     this.devPanelBackground = panel
     this.devCloseButton = close
@@ -459,7 +465,7 @@ export class MainScene extends Phaser.Scene {
 
         const tile = board.tiles[slotIndex]
         if (tile === undefined) return
-        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5).setDepth(10)
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
         this.tileSlots.push({ tile, text })
       })
     })
@@ -565,6 +571,24 @@ export class MainScene extends Phaser.Scene {
   }
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
+    this.swapAnimating = true
+    this.animateTextExchange(first.text, second.text, firstSlot, secondSlot, () => {
+      const firstPoint = this.slotCenter(firstSlot)
+      const secondPoint = this.slotCenter(secondSlot)
+      first.text.setPosition(secondPoint.x, secondPoint.y).setDepth(10)
+      second.text.setPosition(firstPoint.x, firstPoint.y).setDepth(10)
+      this.swapAnimating = false
+      this.updateRowFeedback()
+    })
+  }
+
+  private animateTextExchange(
+    firstText: Phaser.GameObjects.Text,
+    secondText: Phaser.GameObjects.Text,
+    firstSlot: number,
+    secondSlot: number,
+    onComplete: () => void,
+  ): Phaser.Tweens.Tween {
     const startFirst = this.slotCenter(firstSlot)
     const startSecond = this.slotCenter(secondSlot)
     const distanceX = startSecond.x - startFirst.x
@@ -582,8 +606,7 @@ export class MainScene extends Phaser.Scene {
       y: midpoint.y - perpendicular.y * arcHeight * this.swapDirection,
     }
     this.swapDirection *= -1
-    this.swapAnimating = true
-    this.tweens.addCounter({
+    return this.tweens.addCounter({
       from: 0,
       to: 1,
       duration: 300,
@@ -593,14 +616,13 @@ export class MainScene extends Phaser.Scene {
         if (progress === null) return
         const firstPoint = quadraticPoint(startFirst, firstControl, startSecond, progress)
         const secondPoint = quadraticPoint(startSecond, secondControl, startFirst, progress)
-        first.text.setPosition(firstPoint.x, firstPoint.y)
-        second.text.setPosition(secondPoint.x, secondPoint.y)
+        firstText.setPosition(firstPoint.x, firstPoint.y)
+        secondText.setPosition(secondPoint.x, secondPoint.y)
       },
       onComplete: () => {
-        first.text.setPosition(startSecond.x, startSecond.y).setDepth(10)
-        second.text.setPosition(startFirst.x, startFirst.y).setDepth(10)
-        this.swapAnimating = false
-        this.updateRowFeedback()
+        firstText.setPosition(startSecond.x, startSecond.y)
+        secondText.setPosition(startFirst.x, startFirst.y)
+        onComplete()
       },
     })
   }
@@ -659,12 +681,12 @@ export class MainScene extends Phaser.Scene {
     this.reviewSelectedIndex = Math.max(0, this.playerPath.length - 1)
     this.reviewOverlay = this.add.container(0, 0).setDepth(40)
     this.reviewOverlay.add(this.add.rectangle(0, 0, 430, 760, 0xf3eedf, 0.98).setOrigin(0, 0).setInteractive())
-    this.reviewOverlay.add(this.add.text(24, 26, "REVIEW", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }))
-    this.reviewOverlay.add(this.add.text(215, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold" }).setOrigin(0.5))
+    this.reviewOverlay.add(this.add.text(24, 26, "REVIEW", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold", resolution: RENDER_SCALE }))
+    this.reviewOverlay.add(this.add.text(215, 127, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5))
     this.reviewBoard = this.add.container(0, 0)
     this.reviewOverlay.add(this.reviewBoard)
     this.reviewExplorer = new TimelineExplorer<ReviewPathKind>(() => this.updateReviewTimelineGeometry(), { smoothing: DEFAULT_MAGNIFICATION_CONFIG.smoothing })
-    const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
+    const close = this.add.text(398, 34, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(12, 10).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.exitReviewMode(false))
     this.reviewOverlay.add(close)
     this.input.on("pointermove", this.handleReviewPointerMove, this)
@@ -687,12 +709,12 @@ export class MainScene extends Phaser.Scene {
       const button = this.add.rectangle(x, 665, 80, 32, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
       button.on("pointerdown", callback)
       this.reviewOverlay?.add(button)
-      this.reviewOverlay?.add(this.add.text(x + 40, 681, label, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold" }).setOrigin(0.5))
+      this.reviewOverlay?.add(this.add.text(x + 40, 681, label, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5))
     })
     const continueButton = this.add.rectangle(105, 710, 220, 34, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     continueButton.on("pointerdown", () => this.continueFromReview())
     this.reviewOverlay.add(continueButton)
-    this.reviewOverlay.add(this.add.text(215, 727, "CONTINUE PLAYING FROM HERE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold" }).setOrigin(0.5))
+    this.reviewOverlay.add(this.add.text(215, 727, "CONTINUE PLAYING FROM HERE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5))
   }
 
   private refreshReview(): void {
@@ -719,7 +741,7 @@ export class MainScene extends Phaser.Scene {
       return
     }
     const timeline = this.reviewTimeline
-    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
+    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }))
     const largerStateCount = Math.max(this.playerPath.length, this.reviewReferencePath.length)
     const scale = timelineScaleForStateCount(largerStateCount, 344, DEFAULT_MAGNIFICATION_CONFIG)
     const stripWidth = timelineWidthForStateCount(states.length, scale, DEFAULT_MAGNIFICATION_CONFIG)
@@ -734,9 +756,7 @@ export class MainScene extends Phaser.Scene {
       if (baseRect.type === "state") {
         visual.setInteractive(new Phaser.Geom.Rectangle(-9, -24, 18, 48), Phaser.Geom.Rectangle.Contains)
         visual.on("pointerdown", () => {
-          this.reviewSelectedPath = kind
-          this.reviewSelectedIndex = baseRect.index
-          this.refreshReview()
+          this.selectReviewState(kind, baseRect.index)
         })
       }
       timeline.add(visual)
@@ -749,7 +769,7 @@ export class MainScene extends Phaser.Scene {
   private drawCardReviewTimeline(states: ReviewState[], label: string, y: number, kind: ReviewPathKind): void {
     if (this.reviewTimeline === undefined) return
     const timeline = this.reviewTimeline
-    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold" }))
+    timeline.add(this.add.text(24, y - 32, label, { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }))
     const largerCardCount = Math.max(this.playerPath.length, this.reviewReferencePath.length) * 2 - 1
     const cardWidth = cardWidthForPath(largerCardCount, 344, DEFAULT_REVIEW_CARD_CONFIG)
     const cardConfig = { ...DEFAULT_REVIEW_CARD_CONFIG, cardWidth }
@@ -779,9 +799,7 @@ export class MainScene extends Phaser.Scene {
         visual.setStrokeStyle(0, 0x211f1a, 1)
       })
       visual.on("pointerdown", () => {
-        this.reviewSelectedPath = kind
-        this.reviewSelectedIndex = stateIndex
-        this.refreshReview()
+        this.selectReviewState(kind, stateIndex)
       })
       timeline.add(visual)
       rowVisuals.push(visual)
@@ -851,8 +869,7 @@ export class MainScene extends Phaser.Scene {
   private stepReview(amount: number): void {
     this.stopReview()
     const states = this.reviewSelectedPath === "player" ? this.playerPath : this.reviewReferencePath
-    this.reviewSelectedIndex = Math.max(0, Math.min(states.length - 1, this.reviewSelectedIndex + amount))
-    this.refreshReview()
+    this.moveReviewTo(this.reviewSelectedPath, this.reviewSelectedIndex + amount, states)
   }
 
   private playReview(): void {
@@ -864,9 +881,50 @@ export class MainScene extends Phaser.Scene {
         this.stopReview()
         return
       }
-      this.reviewSelectedIndex += 1
-      this.refreshReview()
+      this.moveReviewTo(this.reviewSelectedPath, this.reviewSelectedIndex + 1, states)
     } })
+  }
+
+  private selectReviewState(kind: ReviewPathKind, index: number): void {
+    if (this.reviewSwapAnimating) return
+    this.stopReview()
+    this.moveReviewTo(kind, index)
+  }
+
+  private moveReviewTo(kind: ReviewPathKind, index: number, knownStates?: ReviewState[]): void {
+    if (this.reviewSwapAnimating) return
+    const states = knownStates ?? (kind === "player" ? this.playerPath : this.reviewReferencePath)
+    const nextIndex = Math.max(0, Math.min(states.length - 1, index))
+    if (kind !== this.reviewSelectedPath || Math.abs(nextIndex - this.reviewSelectedIndex) !== 1) {
+      this.reviewSelectedPath = kind
+      this.reviewSelectedIndex = nextIndex
+      this.refreshReview()
+      return
+    }
+
+    const currentIndex = this.reviewSelectedIndex
+    const movingForward = nextIndex > currentIndex
+    const transitionState = states[movingForward ? nextIndex : currentIndex]
+    const swap = transitionState?.swap
+    const firstText = swap === undefined ? undefined : this.reviewTileTexts[swap.firstSlot]
+    const secondText = swap === undefined ? undefined : this.reviewTileTexts[swap.secondSlot]
+    if (swap === undefined || firstText === undefined || secondText === undefined) {
+      this.reviewSelectedPath = kind
+      this.reviewSelectedIndex = nextIndex
+      this.refreshReview()
+      return
+    }
+
+    this.reviewSwapAnimating = true
+    this.reviewSwapTween = this.animateTextExchange(firstText, secondText, swap.firstSlot, swap.secondSlot, () => {
+      this.reviewTileTexts[swap.firstSlot] = secondText
+      this.reviewTileTexts[swap.secondSlot] = firstText
+      this.reviewSwapAnimating = false
+      this.reviewSwapTween = undefined
+      this.reviewSelectedPath = kind
+      this.reviewSelectedIndex = nextIndex
+      this.refreshReview()
+    })
   }
 
   private stopReview(): void {
@@ -876,6 +934,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private continueFromReview(): void {
+    if (this.reviewSwapAnimating) return
     const selected = this.getSelectedReviewState()
     if (selected === undefined) return
     if (this.reviewSelectedPath === "player") {
@@ -893,6 +952,9 @@ export class MainScene extends Phaser.Scene {
 
   private exitReviewMode(keepState: boolean): void {
     this.stopReview()
+    this.reviewSwapTween?.stop()
+    this.reviewSwapTween = undefined
+    this.reviewSwapAnimating = false
     this.input.off("pointermove", this.handleReviewPointerMove, this)
     this.input.off("pointerup", this.handleReviewPointerUp, this)
     this.reviewExplorer?.dispose()
@@ -920,6 +982,7 @@ export class MainScene extends Phaser.Scene {
   private drawReviewBoard(state: readonly LetterTile[]): void {
     if (this.reviewBoard === undefined) return
     this.reviewBoard.removeAll(true)
+    this.reviewTileTexts = []
     this.puzzle.rows.forEach((row, rowIndex) => {
       const y = ROW_TOP + rowIndex * (CELL_SIZE + CELL_GAP + 26)
       const rowWidth = 5 * CELL_SIZE + 4 * CELL_GAP + 14
@@ -933,7 +996,9 @@ export class MainScene extends Phaser.Scene {
         if (tile === undefined) return
         const individualCorrect = tile.letter === row.intendedGuess[columnIndex] && word !== row.intendedGuess
         this.reviewBoard?.add(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(individualCorrect ? 4 : 0, 0x8faf83))
-        this.reviewBoard?.add(this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold" }).setOrigin(0.5))
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+        this.reviewBoard?.add(text)
+        this.reviewTileTexts[slotIndex] = text
       })
     })
   }
