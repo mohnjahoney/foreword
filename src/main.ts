@@ -18,6 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   render: { antialias: true, roundPixels: false },
   input: { keyboard: true, mouse: true, touch: true },
+  dom: { createContainer: true },
 }
 
 new Phaser.Game(config)

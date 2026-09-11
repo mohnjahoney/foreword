@@ -15,6 +15,7 @@ export interface ForewordPuzzle {
 }
 
 export interface PuzzleSetup {
+  seed?: number
   requireTargetLetterInEachRow?: boolean
   requireGreenTileInEachRow?: boolean
   minGreenTiles?: number
