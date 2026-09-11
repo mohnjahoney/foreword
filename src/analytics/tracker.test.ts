@@ -14,10 +14,16 @@ describe("Foreword analytics tracker", () => {
     expect(calls).toHaveLength(1)
     expect(calls[0]?.[0]).toBe(TRACKER_ENDPOINT)
     expect(JSON.parse(String(calls[0]?.[1].body))).toMatchObject({
-      event: "foreword:puzzle_started",
-      message: "foreword:puzzle_started",
-      seed: 123456,
-      wordListMode: "easy",
+      events: [{
+        projectId: "foreword",
+        source: "foreword",
+        type: "foreword:puzzle_started",
+        payload: {
+          sessionId: expect.any(String),
+          seed: 123456,
+          wordListMode: "easy",
+        },
+      }],
     })
   })
 })

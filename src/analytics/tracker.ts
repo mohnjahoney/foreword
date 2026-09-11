@@ -1,4 +1,6 @@
-export const TRACKER_ENDPOINT = "https://public-data-receiver-test.mohnjahoney.chatgpt.site/api/events"
+import { createEventEnvelope } from "./protocol"
+
+export const TRACKER_ENDPOINT = "https://analytics-receiver.mohnjahoney.chatgpt.site/api/events"
 
 type AnalyticsDetails = Record<string, unknown>
 
@@ -18,17 +20,19 @@ export function startPuzzleAnalytics(): { puzzleId: string; puzzleNumber: number
 }
 
 export function trackForewordEvent(event: string, details: AnalyticsDetails = {}): void {
+  const envelope = createEventEnvelope({
+    projectId: "foreword",
+    source: "foreword",
+    id: createAnalyticsId(),
+    type: event,
+    time: new Date().toISOString(),
+    payload: { sessionId, ...details },
+  })
+
   void fetch(TRACKER_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      event,
-      message: event,
-      eventId: createAnalyticsId(),
-      sessionId,
-      occurredAt: new Date().toISOString(),
-      ...details,
-    }),
+    body: JSON.stringify({ events: [envelope] }),
     keepalive: true,
   }).catch(() => {
     // Analytics must never interrupt or alter gameplay.
