@@ -188,7 +188,7 @@ export class MainScene extends Phaser.Scene {
     trackForewordEvent("foreword:puzzle_started", {
       puzzleId: this.puzzleId,
       puzzleNumber: this.puzzleNumber,
-      seed: this.seed,
+      randomSeed: this.seed,
       wordListMode: this.wordListMode,
       targetWord: this.puzzle.target,
       minimumMoves: this.minimumMoves,
@@ -630,7 +630,7 @@ export class MainScene extends Phaser.Scene {
         puzzleId: this.puzzleId,
         puzzleNumber: this.puzzleNumber,
         outcome: "solved",
-        seed: this.seed,
+        randomSeed: this.seed,
         wordListMode: this.wordListMode,
         movesTaken: this.movesTaken,
         minimumMoves: this.minimumMoves,

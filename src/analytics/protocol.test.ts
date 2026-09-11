@@ -9,14 +9,14 @@ describe("analytics protocol adapter", () => {
       source: "foreword",
       type: "foreword:puzzle_started",
       time: "2026-09-11T12:00:00.000Z",
-      payload: { sessionId: "session-1", seed: 123456 },
+      payload: { sessionId: "session-1", randomSeed: 123456 },
     })).toEqual({
       id: "event-1",
       projectId: "foreword",
       source: "foreword",
       type: "foreword:puzzle_started",
       time: "2026-09-11T12:00:00.000Z",
-      payload: { sessionId: "session-1", seed: 123456 },
+      payload: { sessionId: "session-1", randomSeed: 123456 },
     })
   })
 })
