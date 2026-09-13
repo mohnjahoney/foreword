@@ -93,7 +93,7 @@ export class OpeningAnimation {
           fontSize: "28px",
           fontStyle: "bold",
           resolution: RENDER_SCALE,
-        }).setOrigin(0.5)
+        }).setOrigin(0.5).setAlpha(0)
         const letter = this.scene.add.text(0, 0, intendedGuess[column] ?? "", {
           color: "#fffaf0",
           fontFamily: "Arial, sans-serif",
@@ -117,7 +117,10 @@ export class OpeningAnimation {
       const start = 520 + rowIndex * ROW_INTERVAL
       for (let column = 0; column < 5; column += 1) {
         this.after(start + column * ENTRY_INTERVAL, () => {
-          this.scene.tweens.add({ targets: this.tiles[rowIndex * 5 + column]?.container, scale: 1.08, duration: 90, yoyo: true, ease: "Sine.Out" })
+          const tile = this.tiles[rowIndex * 5 + column]
+          if (!tile) return
+          this.scene.tweens.add({ targets: tile.unknown, alpha: 1, duration: 70, ease: "Sine.Out" })
+          this.scene.tweens.add({ targets: tile.container, scale: 1.08, duration: 90, yoyo: true, ease: "Sine.Out" })
         })
       }
       const submitAt = start + 5 * ENTRY_INTERVAL + 180
