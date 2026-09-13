@@ -1,5 +1,5 @@
 import Phaser from "phaser"
-import { createScrambledBoard, type LetterTile } from "../core/board"
+import { createScrambledBoard, type LetterTile, type ScrambledBoard } from "../core/board"
 import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
@@ -33,6 +33,7 @@ type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
 type ReviewPathKind = "player" | "reference"
 
 const ICON_KEYS = ["replace", "eye", "square", "layers-3", "rotate-ccw", "arrow-right"] as const
+const OPENING_SEEN_KEY = "foreword-opening-seen"
 
 let pendingSceneData: SceneData | undefined
 const PENDING_SETUP_STORAGE_KEY = "foreword-pending-setup"
@@ -50,6 +51,7 @@ export class MainScene extends Phaser.Scene {
   private movesTaken = 0
   private minimumMoves = 0
   private puzzleCreationFailed = false
+  private preparedBoard?: ScrambledBoard
   private devPanelReady = false
   private movesTakenText!: Phaser.GameObjects.Text
   private minimumMovesText!: Phaser.GameObjects.Text
@@ -69,6 +71,7 @@ export class MainScene extends Phaser.Scene {
   private devOverlay!: Phaser.GameObjects.Rectangle
   private devPanelBackground!: Phaser.GameObjects.Rectangle
   private devCloseButton!: Phaser.GameObjects.Text
+  private replayOpeningButton!: Phaser.GameObjects.Text
   private devToggle!: Phaser.GameObjects.Rectangle
   private devGreenToggle!: Phaser.GameObjects.Rectangle
   private devGreenCountText!: Phaser.GameObjects.Text
@@ -146,6 +149,7 @@ export class MainScene extends Phaser.Scene {
     this.reviewTimer?.remove()
     this.reviewTimer = undefined
     this.puzzleCreationFailed = false
+    this.preparedBoard = undefined
     this.devPanelReady = false
     this.modeLabelAnimating = false
     this.interactionMode = "swap"
@@ -175,12 +179,16 @@ export class MainScene extends Phaser.Scene {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
     }
-    if (!this.puzzleCreationFailed) {
-      new OpeningAnimation(this, this.puzzle, () => undefined)
+    if (!this.puzzleCreationFailed && !this.hasSeenOpening()) {
+      this.preparedBoard = createScrambledBoard(this.puzzle, this.letterRandom)
+      this.markOpeningSeen()
+      new OpeningAnimation(this, this.puzzle, this.preparedBoard, () => undefined)
     }
     this.add.text(30, 28, "4oreword", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold", resolution: RENDER_SCALE })
-    const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
-    devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
+    if (import.meta.env.DEV) {
+      const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
+      devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
+    }
 
     this.add.text(215, 127, this.puzzleCreationFailed ? "—" : this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "28px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     if (this.puzzleCreationFailed) {
@@ -200,8 +208,35 @@ export class MainScene extends Phaser.Scene {
     })
     this.buildMoveInfo()
     this.buildInteractionTools()
-    this.buildDevPanel()
-    this.buildNewPuzzleButton()
+    if (import.meta.env.DEV) {
+      this.buildDevPanel()
+      this.buildNewPuzzleButton()
+    }
+  }
+
+  private hasSeenOpening(): boolean {
+    try {
+      return window.sessionStorage.getItem(OPENING_SEEN_KEY) === "true"
+    } catch {
+      return false
+    }
+  }
+
+  private markOpeningSeen(): void {
+    try {
+      window.sessionStorage.setItem(OPENING_SEEN_KEY, "true")
+    } catch {
+      // The intro can replay if session storage is unavailable.
+    }
+  }
+
+  private replayOpening(): void {
+    try {
+      window.sessionStorage.removeItem(OPENING_SEEN_KEY)
+    } catch {
+      // Restarting still gives the developer a fresh attempt in normal browsers.
+    }
+    this.restartWithSetup(this.currentPuzzleSetup())
   }
 
   private restartWithSetup(setup: SceneData): void {
@@ -383,7 +418,7 @@ export class MainScene extends Phaser.Scene {
     this.devOverlay = this.add.rectangle(0, 0, 430, 760, 0x000000, 0).setOrigin(0, 0).setDepth(49).setInteractive()
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
-    const panel = this.add.rectangle(0, 0, 380, 510, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
+    const panel = this.add.rectangle(0, 0, 380, 550, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     this.devPanel.add(panel)
     const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
@@ -427,7 +462,9 @@ export class MainScene extends Phaser.Scene {
     this.continuousMagnificationButton.on("pointerdown", () => this.setMagnificationMode("continuous"))
     this.cardMagnificationButton.on("pointerdown", () => this.setMagnificationMode("cards"))
     const note = this.add.text(20, 485, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 }, resolution: RENDER_SCALE })
-    this.devPanel.add([heading, close, wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note])
+    this.replayOpeningButton = this.add.text(20, 520, "REPLAY OPENING", { color: COLORS.ink, backgroundColor: "#c6bdae", fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setPadding(10, 7).setInteractive({ useHandCursor: true })
+    this.replayOpeningButton.on("pointerdown", () => this.replayOpening())
+    this.devPanel.add([heading, close, wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note, this.replayOpeningButton])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
@@ -470,6 +507,7 @@ export class MainScene extends Phaser.Scene {
       this.centerMagnificationButton.setInteractive({ useHandCursor: true })
       this.continuousMagnificationButton.setInteractive({ useHandCursor: true })
       this.cardMagnificationButton.setInteractive({ useHandCursor: true })
+      this.replayOpeningButton.setInteractive({ useHandCursor: true })
     } else {
       this.devOverlay.disableInteractive()
       this.devPanelBackground.disableInteractive()
@@ -484,6 +522,7 @@ export class MainScene extends Phaser.Scene {
       this.centerMagnificationButton.disableInteractive()
       this.continuousMagnificationButton.disableInteractive()
       this.cardMagnificationButton.disableInteractive()
+      this.replayOpeningButton.disableInteractive()
     }
   }
 
@@ -530,7 +569,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildBoard(): void {
-    const board = createScrambledBoard(this.puzzle, this.letterRandom)
+    const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom)
+    this.preparedBoard = undefined
     this.initialTileIds = board.tiles.map((tile) => tile.id)
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     this.puzzle.rows.forEach((row, rowIndex) => {

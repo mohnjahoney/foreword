@@ -1,4 +1,5 @@
 import Phaser from "phaser"
+import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
 import type { ForewordPuzzle } from "../core/puzzle"
 import { RENDER_SCALE } from "../style/rendering"
@@ -40,6 +41,7 @@ export class OpeningAnimation {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly puzzle: ForewordPuzzle,
+    private readonly scrambledBoard: ScrambledBoard,
     private readonly onComplete: () => void,
   ) {
     this.layer = scene.add.container(0, 0).setDepth(10_000)
@@ -162,17 +164,27 @@ export class OpeningAnimation {
     this.tiles.slice(0, 20).forEach((tile, index) => {
       const row = Math.floor(index / 5)
       const column = index % 5
-      this.crossfadeLetter(index)
+      const destination = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
+      const destinationRow = Math.floor(destination / 5)
+      const destinationColumn = destination % 5
+      const destinationX = BOARD_LEFT + destinationColumn * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2
+      const destinationY = BOARD_TOP + destinationRow * ROW_STEP + CELL_SIZE / 2
+      const sourceX = BOARD_LEFT + column * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2
+      const sourceY = BOARD_TOP + row * ROW_STEP + CELL_SIZE / 2
+      const offsetX = destinationX - sourceX
+      const offsetY = destinationY - sourceY
       this.scene.tweens.add({
-        targets: tile.container,
-        x: BOARD_LEFT + column * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2,
-        y: 180 + row * (CELL_SIZE + CELL_GAP + 26) + CELL_SIZE / 2,
-        angle: (index % 2 === 0 ? 1 : -1) * (8 + (index % 4) * 3),
+        targets: [tile.unknown, tile.letter],
+        x: offsetX,
+        y: offsetY,
         duration: SHUFFLE_DURATION,
         delay: (index % 5) * 18,
         ease: "Cubic.InOut",
       })
     })
+    this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION * 0.25, () => {
+      for (let index = 0; index < 20; index += 1) this.crossfadeLetter(index)
+    }))
     this.scene.tweens.add({ targets: this.tiles.slice(20).map((tile) => tile.container), alpha: 0, duration: SHUFFLE_DURATION, ease: "Sine.InOut" })
     this.scene.tweens.add({
       targets: this.layer,
