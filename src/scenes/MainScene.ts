@@ -12,6 +12,7 @@ import { ALLOWED_WORDS, ANSWER_WORDS, isAllowedWord } from "../core/words"
 import { createSeededRandom, nextPuzzleSeed, normalizeSeed, seedFromCurrentTime } from "../core/seededRandom"
 import { configureLogicalCamera, RENDER_SCALE } from "../style/rendering"
 import { startPuzzleAnalytics, trackForewordEvent, trackSessionStarted } from "../analytics/tracker"
+import { OpeningAnimation } from "../presentation/OpeningAnimation"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
 const CELL_SIZE = 52
@@ -173,6 +174,9 @@ export class MainScene extends Phaser.Scene {
     } catch {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
+    }
+    if (!this.puzzleCreationFailed) {
+      new OpeningAnimation(this, this.puzzle, () => undefined)
     }
     this.add.text(30, 28, "4oreword", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "32px", fontStyle: "bold", resolution: RENDER_SCALE })
     const devButton = this.add.text(398, 66, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
