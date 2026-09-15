@@ -1,9 +1,8 @@
 import Phaser from "phaser"
 import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
-import type { ForewordPuzzle } from "../core/puzzle"
 import { RENDER_SCALE } from "../style/rendering"
-import { BOARD_LAYOUT, boardSlotCenter } from "./board/boardLayout"
+import { BOARD_LAYOUT, boardRowWidth, boardSlotCenter } from "./board/boardLayout"
 import { addForewordHeader } from "./ForewordHeader"
 
 const COLORS = {
@@ -35,12 +34,12 @@ interface OpeningTile {
 export class OpeningAnimation {
   private readonly layer: Phaser.GameObjects.Container
   private readonly tiles: OpeningTile[] = []
+  private readonly rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private readonly timers: Phaser.Time.TimerEvent[] = []
   private finished = false
 
   constructor(
     private readonly scene: Phaser.Scene,
-    private readonly puzzle: ForewordPuzzle,
     private readonly scrambledBoard: ScrambledBoard,
     private readonly onComplete: () => void,
   ) {
@@ -61,9 +60,14 @@ export class OpeningAnimation {
   }
 
   private buildBoard(): void {
-    const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
+    const rows = this.scrambledBoard.rows
     rows.forEach(({ intendedGuess }, row) => {
       const rowTiles = this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5)
+      const rowWidth = boardRowWidth()
+      const y = BOARD_LAYOUT.top + row * BOARD_LAYOUT.rowStep
+      const outline = this.scene.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0)
+      this.rowOutlines.push(outline)
+      this.layer.add(outline)
       for (let column = 0; column < 5; column += 1) {
         const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)
@@ -91,7 +95,7 @@ export class OpeningAnimation {
   }
 
   private scheduleAnimation(): void {
-    const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
+    const rows = this.scrambledBoard.rows
     rows.forEach((row, rowIndex) => {
       const start = splashTime(520) + rowIndex * ROW_INTERVAL
       for (let column = 0; column < 5; column += 1) {
@@ -125,6 +129,7 @@ export class OpeningAnimation {
       ease: "Sine.In",
       onComplete: () => {
         tile.background.setFillStyle(COLORS[result]).setStrokeStyle(1.5, COLORS[result])
+        if (index >= 20) this.rowOutlines[4]?.setStrokeStyle(4, COLORS.correct)
         this.scene.tweens.add({ targets: tile.container, scaleY: 1, duration: FLIP_DURATION, ease: "Back.Out" })
       },
     })

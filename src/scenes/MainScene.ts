@@ -183,7 +183,7 @@ export class MainScene extends Phaser.Scene {
     if (!this.puzzleCreationFailed && !this.hasSeenOpening()) {
       this.preparedBoard = createScrambledBoard(this.puzzle, this.letterRandom)
       this.markOpeningSeen()
-      new OpeningAnimation(this, this.puzzle, this.preparedBoard, () => undefined)
+      new OpeningAnimation(this, this.preparedBoard, () => undefined)
     }
     addForewordHeader(this)
     if (import.meta.env.DEV) {
@@ -574,14 +574,13 @@ export class MainScene extends Phaser.Scene {
     const movableTileCount = this.puzzle.rows.length * 5
     this.initialTileIds = board.tiles.slice(0, movableTileCount).map((tile) => tile.id)
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles.slice(0, movableTileCount))
-    const rows = [...this.puzzle.rows, { intendedGuess: this.puzzle.target, pattern: Array(5).fill("correct") as ForewordPuzzle["rows"][number]["pattern"] }]
+    const rows = board.rows
     rows.forEach((row, rowIndex) => {
       const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
       const rowWidth = boardRowWidth()
       const isFrozen = board.frozenRows.includes(rowIndex)
-      if (!isFrozen) {
-        this.rowOutlines.push(this.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
-      }
+      const outline = this.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(isFrozen ? 4 : 0, COLORS.correct).setDepth(2)
+      if (!isFrozen) this.rowOutlines.push(outline)
       const rowTiles = board.tiles.slice(rowIndex * 5, (rowIndex + 1) * 5)
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index

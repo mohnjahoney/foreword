@@ -1,4 +1,4 @@
-import { ROW_COUNT, type ForewordPuzzle } from "./puzzle"
+import { ROW_COUNT, type ForewordPuzzle, type ForewordRow } from "./puzzle"
 
 export const TILES_PER_ROW = 5
 
@@ -10,7 +10,7 @@ export interface LetterTile {
 }
 
 export interface ScrambledBoard {
-  rows: ForewordPuzzle["rows"]
+  rows: ForewordRow[]
   initialTiles: LetterTile[]
   tiles: LetterTile[]
   frozenRows: number[]
@@ -40,8 +40,13 @@ export function createScrambledBoard(
     sourceColumn,
   }))
 
+  const boardRows: ForewordRow[] = [
+    ...puzzle.rows,
+    { intendedGuess: puzzle.target, pattern: Array(5).fill("correct") },
+  ]
+
   return {
-    rows: puzzle.rows,
+    rows: boardRows,
     initialTiles: [...tiles, ...targetTiles],
     tiles: [...shuffled(tiles, random), ...targetTiles],
     frozenRows: [ROW_COUNT],

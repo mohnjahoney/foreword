@@ -9,7 +9,7 @@ describe("createScrambledBoard", () => {
     const intendedLetters = [...puzzle.rows.flatMap((row) => [...row.intendedGuess]), ...puzzle.target].sort()
     const scrambledLetters = board.tiles.map((tile) => tile.letter).sort()
 
-    expect(board.rows).toBe(puzzle.rows)
+    expect(board.rows).toHaveLength(ROW_COUNT + 1)
     expect(board.initialTiles.map((tile) => tile.letter).join("")).toBe(`${puzzle.rows.flatMap((row) => row.intendedGuess).join("")}${puzzle.target}`)
     expect(board.tiles).toHaveLength((ROW_COUNT + 1) * 5)
     expect(board.tiles.slice(ROW_COUNT * 5).map((tile) => tile.letter).join("")).toBe(puzzle.target)
