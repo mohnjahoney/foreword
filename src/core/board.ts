@@ -11,7 +11,9 @@ export interface LetterTile {
 
 export interface ScrambledBoard {
   rows: ForewordPuzzle["rows"]
+  initialTiles: LetterTile[]
   tiles: LetterTile[]
+  targetTiles: LetterTile[]
 }
 
 export function createScrambledBoard(
@@ -31,7 +33,14 @@ export function createScrambledBoard(
     })),
   )
 
-  return { rows: puzzle.rows, tiles: shuffled(tiles, random) }
+  const targetTiles = [...puzzle.target].map((letter, sourceColumn) => ({
+    id: ROW_COUNT * TILES_PER_ROW + sourceColumn,
+    letter,
+    sourceRow: ROW_COUNT,
+    sourceColumn,
+  }))
+
+  return { rows: puzzle.rows, initialTiles: tiles, tiles: shuffled(tiles, random), targetTiles }
 }
 
 function shuffled<T>(items: readonly T[], random: () => number): T[] {

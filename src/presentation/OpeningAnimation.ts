@@ -3,6 +3,8 @@ import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
 import type { ForewordPuzzle } from "../core/puzzle"
 import { RENDER_SCALE } from "../style/rendering"
+import { BOARD_LAYOUT, boardSlotCenter } from "./board/boardLayout"
+import { addForewordHeader } from "./ForewordHeader"
 
 const COLORS = {
   paper: 0xf3eedf,
@@ -14,11 +16,7 @@ const COLORS = {
   correct: 0x71845f,
 } as const
 
-const CELL_SIZE = 45
-const CELL_GAP = 6
-const BOARD_LEFT = 102
-const BOARD_TOP = 174
-const ROW_STEP = CELL_SIZE + CELL_GAP + 14
+const CELL_SIZE = BOARD_LAYOUT.tileSize
 const ENTRY_INTERVAL = 112
 const ROW_INTERVAL = 1_470
 const FLIP_DURATION = 145
@@ -57,35 +55,15 @@ export class OpeningAnimation {
   }
 
   private addHeader(): void {
-    this.layer.add(this.scene.add.text(215, 67, "FOREWORD", {
-      color: COLORS.ink,
-      fontFamily: "Georgia, Times New Roman, serif",
-      fontSize: "31px",
-      fontStyle: "bold",
-      resolution: RENDER_SCALE,
-    }).setOrigin(0.5))
-    this.layer.add(this.scene.add.text(215, 104, "A word is never just one word.", {
-      color: COLORS.muted,
-      fontFamily: "Georgia, Times New Roman, serif",
-      fontSize: "15px",
-      fontStyle: "italic",
-      resolution: RENDER_SCALE,
-    }).setOrigin(0.5))
-    const rule = this.scene.add.graphics()
-    rule.lineStyle(1, 0xc6bdae, 0.9)
-    rule.lineBetween(31, 128, 399, 128)
-    this.layer.add(rule)
+    addForewordHeader(this.scene, this.layer)
   }
 
   private buildBoard(): void {
-    const rows = [
-      ...this.puzzle.rows,
-      { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") },
-    ]
+    const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
     rows.forEach(({ intendedGuess }, row) => {
+      const rowTiles = row < this.scrambledBoard.rows.length ? this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5) : this.scrambledBoard.targetTiles
       for (let column = 0; column < 5; column += 1) {
-        const x = BOARD_LEFT + column * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2
-        const y = BOARD_TOP + row * ROW_STEP + CELL_SIZE / 2
+        const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)
         const background = this.scene.add.rectangle(0, 0, CELL_SIZE, CELL_SIZE, COLORS.empty)
           .setStrokeStyle(1.5, 0xc6bdae)
@@ -96,7 +74,7 @@ export class OpeningAnimation {
           fontStyle: "bold",
           resolution: RENDER_SCALE,
         }).setOrigin(0.5).setAlpha(0)
-        const letter = this.scene.add.text(0, 0, intendedGuess[column] ?? "", {
+        const letter = this.scene.add.text(0, 0, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
           color: "#fffaf0",
           fontFamily: "Arial, sans-serif",
           fontSize: "24px",
@@ -111,10 +89,7 @@ export class OpeningAnimation {
   }
 
   private scheduleAnimation(): void {
-    const rows = [
-      ...this.puzzle.rows,
-      { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") },
-    ]
+    const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
     rows.forEach((row, rowIndex) => {
       const start = 520 + rowIndex * ROW_INTERVAL
       for (let column = 0; column < 5; column += 1) {
@@ -164,15 +139,13 @@ export class OpeningAnimation {
     this.tiles.slice(0, 20).forEach((tile, index) => {
       const row = Math.floor(index / 5)
       const column = index % 5
-      const destination = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
-      const destinationRow = Math.floor(destination / 5)
-      const destinationColumn = destination % 5
-      const destinationX = BOARD_LEFT + destinationColumn * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2
-      const destinationY = BOARD_TOP + destinationRow * ROW_STEP + CELL_SIZE / 2
-      const sourceX = BOARD_LEFT + column * (CELL_SIZE + CELL_GAP) + CELL_SIZE / 2
-      const sourceY = BOARD_TOP + row * ROW_STEP + CELL_SIZE / 2
-      const offsetX = destinationX - sourceX
-      const offsetY = destinationY - sourceY
+      const destinationIndex = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
+      const destinationRow = Math.floor(destinationIndex / 5)
+      const destinationColumn = destinationIndex % 5
+      const destination = boardSlotCenter(destinationRow, destinationColumn)
+      const source = boardSlotCenter(row, column)
+      const offsetX = destination.x - source.x
+      const offsetY = destination.y - source.y
       this.scene.tweens.add({
         targets: [tile.unknown, tile.letter],
         x: offsetX,
@@ -186,19 +159,12 @@ export class OpeningAnimation {
       for (let index = 0; index < 20; index += 1) this.crossfadeLetter(index)
     }))
     this.scene.tweens.add({ targets: this.tiles.slice(20).map((tile) => tile.container), alpha: 0, duration: SHUFFLE_DURATION, ease: "Sine.InOut" })
-    this.scene.tweens.add({
-      targets: this.layer,
-      alpha: 0,
-      duration: 650,
-      delay: SHUFFLE_DURATION - 250,
-      ease: "Sine.InOut",
-      onComplete: () => {
+    this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION, () => {
         if (this.finished) return
         this.finished = true
         this.destroy()
         this.onComplete()
-      },
-    })
+    }))
   }
 
   private after(delay: number, callback: () => void): void {

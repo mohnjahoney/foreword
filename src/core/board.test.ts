@@ -10,7 +10,10 @@ describe("createScrambledBoard", () => {
     const scrambledLetters = board.tiles.map((tile) => tile.letter).sort()
 
     expect(board.rows).toBe(puzzle.rows)
+    expect(board.initialTiles.map((tile) => tile.letter).join("")).toBe(puzzle.rows.flatMap((row) => row.intendedGuess).join(""))
     expect(board.tiles).toHaveLength(ROW_COUNT * 5)
+    expect(board.targetTiles.map((tile) => tile.letter).join("")).toBe(puzzle.target)
+    expect(board.targetTiles).toHaveLength(5)
     expect(scrambledLetters).toEqual(intendedLetters)
     expect(new Set(board.tiles.map((tile) => tile.id)).size).toBe(20)
   })
