@@ -17,10 +17,12 @@ const COLORS = {
 } as const
 
 const CELL_SIZE = BOARD_LAYOUT.tileSize
-const ENTRY_INTERVAL = 112
-const ROW_INTERVAL = 1_470
-const FLIP_DURATION = 145
-const SHUFFLE_DURATION = 1_250
+const SPLASH_SPEED = 2
+const splashTime = (milliseconds: number): number => milliseconds / SPLASH_SPEED
+const ENTRY_INTERVAL = splashTime(112)
+const ROW_INTERVAL = splashTime(1_470)
+const FLIP_DURATION = splashTime(145)
+const SHUFFLE_DURATION = splashTime(1_250)
 
 interface OpeningTile {
   container: Phaser.GameObjects.Container
@@ -91,26 +93,26 @@ export class OpeningAnimation {
   private scheduleAnimation(): void {
     const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
     rows.forEach((row, rowIndex) => {
-      const start = 520 + rowIndex * ROW_INTERVAL
+      const start = splashTime(520) + rowIndex * ROW_INTERVAL
       for (let column = 0; column < 5; column += 1) {
         this.after(start + column * ENTRY_INTERVAL, () => {
           const tile = this.tiles[rowIndex * 5 + column]
           if (!tile) return
-          this.scene.tweens.add({ targets: tile.unknown, alpha: 1, duration: 70, ease: "Sine.Out" })
-          this.scene.tweens.add({ targets: tile.container, scale: 1.08, duration: 90, yoyo: true, ease: "Sine.Out" })
+          this.scene.tweens.add({ targets: tile.unknown, alpha: 1, duration: splashTime(70), ease: "Sine.Out" })
+          this.scene.tweens.add({ targets: tile.container, scale: 1.08, duration: splashTime(90), yoyo: true, ease: "Sine.Out" })
         })
       }
-      const submitAt = start + 5 * ENTRY_INTERVAL + 180
+      const submitAt = start + 5 * ENTRY_INTERVAL + splashTime(180)
       row.pattern.forEach((result, column) => {
-        this.after(submitAt + 170 + column * 88, () => this.flipTile(rowIndex * 5 + column, result))
+        this.after(submitAt + splashTime(170) + column * splashTime(88), () => this.flipTile(rowIndex * 5 + column, result))
       })
     })
 
-    const targetRevealAt = 520 + 4 * ROW_INTERVAL + 5 * ENTRY_INTERVAL + 170 + 5 * 88 + 300
+    const targetRevealAt = splashTime(520) + 4 * ROW_INTERVAL + 5 * ENTRY_INTERVAL + splashTime(170) + 5 * splashTime(88) + splashTime(300)
     this.after(targetRevealAt, () => {
-      for (let column = 0; column < 5; column += 1) this.crossfadeLetter(20 + column)
+      for (let column = 0; column < 5; column += 1) this.showLetter(20 + column)
     })
-    this.after(targetRevealAt + 900, () => this.shuffleUnknown())
+    this.after(targetRevealAt + splashTime(900), () => this.shuffleUnknown())
   }
 
   private flipTile(index: number, result: LetterResult): void {
@@ -131,8 +133,15 @@ export class OpeningAnimation {
   private crossfadeLetter(index: number): void {
     const tile = this.tiles[index]
     if (!tile) return
-    this.scene.tweens.add({ targets: tile.unknown, alpha: 0, duration: 300, ease: "Sine.InOut" })
-    this.scene.tweens.add({ targets: tile.letter, alpha: 1, duration: 300, ease: "Sine.InOut" })
+    this.scene.tweens.add({ targets: tile.unknown, alpha: 0, duration: splashTime(300), ease: "Sine.InOut" })
+    this.scene.tweens.add({ targets: tile.letter, alpha: 1, duration: splashTime(300), ease: "Sine.InOut" })
+  }
+
+  private showLetter(index: number): void {
+    const tile = this.tiles[index]
+    if (!tile) return
+    tile.unknown.setAlpha(0)
+    tile.letter.setAlpha(1)
   }
 
   private shuffleUnknown(): void {
@@ -151,7 +160,7 @@ export class OpeningAnimation {
         x: offsetX,
         y: offsetY,
         duration: SHUFFLE_DURATION,
-        delay: (index % 5) * 18,
+        delay: (index % 5) * splashTime(18),
         ease: "Cubic.InOut",
       })
     })
