@@ -158,7 +158,6 @@ export class OpeningAnimation {
     this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION * 0.25, () => {
       for (let index = 0; index < 20; index += 1) this.crossfadeLetter(index)
     }))
-    this.scene.tweens.add({ targets: this.tiles.slice(20).map((tile) => tile.container), alpha: 0, duration: SHUFFLE_DURATION, ease: "Sine.InOut" })
     this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION, () => {
         if (this.finished) return
         this.finished = true
