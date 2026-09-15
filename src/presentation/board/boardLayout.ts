@@ -1,7 +1,7 @@
 export const BOARD_LAYOUT = {
   left: 75,
   top: 150,
-  tileSize: 52,
+  tileSize: 48,
   gap: 7,
   rowStep: 73,
   rowPadding: 14,

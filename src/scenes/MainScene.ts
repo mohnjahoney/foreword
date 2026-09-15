@@ -20,6 +20,7 @@ const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0x
 const CELL_SIZE = BOARD_LAYOUT.tileSize
 const OUTLINE_SIZE = CELL_SIZE + 5
 const SWAP_SELECTION_DELAY = 140
+const SWAP_ANIMATION_DURATION = 480
 
 interface TileVisual {
   tile: LetterTile
@@ -394,7 +395,7 @@ export class MainScene extends Phaser.Scene {
     this.tweens.addCounter({
       from: 0,
       to: 1,
-      duration: 300,
+      duration: SWAP_ANIMATION_DURATION,
       ease: "Sine.easeInOut",
       onUpdate: (tween) => {
         const progress = tween.getValue()
