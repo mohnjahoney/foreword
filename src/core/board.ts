@@ -13,7 +13,7 @@ export interface ScrambledBoard {
   rows: ForewordPuzzle["rows"]
   initialTiles: LetterTile[]
   tiles: LetterTile[]
-  targetTiles: LetterTile[]
+  frozenRows: number[]
 }
 
 export function createScrambledBoard(
@@ -40,7 +40,12 @@ export function createScrambledBoard(
     sourceColumn,
   }))
 
-  return { rows: puzzle.rows, initialTiles: tiles, tiles: shuffled(tiles, random), targetTiles }
+  return {
+    rows: puzzle.rows,
+    initialTiles: [...tiles, ...targetTiles],
+    tiles: [...shuffled(tiles, random), ...targetTiles],
+    frozenRows: [ROW_COUNT],
+  }
 }
 
 function shuffled<T>(items: readonly T[], random: () => number): T[] {

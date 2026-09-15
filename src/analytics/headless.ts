@@ -30,7 +30,7 @@ export function createHeadlessGame(options: HeadlessGameOptions) {
   const sessionId = options.sessionId ?? createId()
   const puzzleId = options.puzzleId ?? createId()
   const puzzle = createForewordPuzzle(createSeededRandom(randomSeed, 1), options.setup)
-  const initialTiles = createScrambledBoard(puzzle, createSeededRandom(randomSeed, 2)).tiles
+  const initialTiles = createScrambledBoard(puzzle, createSeededRandom(randomSeed, 2)).tiles.slice(0, puzzle.rows.length * 5)
   let tiles = initialTiles.map((tile) => ({ ...tile }))
   let selectedSlot: number | undefined
   let movesTaken = 0

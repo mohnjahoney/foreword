@@ -63,7 +63,7 @@ export class OpeningAnimation {
   private buildBoard(): void {
     const rows = [...this.scrambledBoard.rows, { intendedGuess: this.puzzle.target, pattern: Array<LetterResult>(5).fill("correct") }]
     rows.forEach(({ intendedGuess }, row) => {
-      const rowTiles = row < this.scrambledBoard.rows.length ? this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5) : this.scrambledBoard.targetTiles
+      const rowTiles = this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5)
       for (let column = 0; column < 5; column += 1) {
         const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)

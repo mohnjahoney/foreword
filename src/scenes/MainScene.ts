@@ -571,22 +571,24 @@ export class MainScene extends Phaser.Scene {
   private buildBoard(): void {
     const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom)
     this.preparedBoard = undefined
-    this.initialTileIds = board.tiles.map((tile) => tile.id)
-    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
+    const movableTileCount = this.puzzle.rows.length * 5
+    this.initialTileIds = board.tiles.slice(0, movableTileCount).map((tile) => tile.id)
+    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles.slice(0, movableTileCount))
     const rows = [...this.puzzle.rows, { intendedGuess: this.puzzle.target, pattern: Array(5).fill("correct") as ForewordPuzzle["rows"][number]["pattern"] }]
     rows.forEach((row, rowIndex) => {
       const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
       const rowWidth = boardRowWidth()
-      if (rowIndex < this.puzzle.rows.length) {
+      const isFrozen = board.frozenRows.includes(rowIndex)
+      if (!isFrozen) {
         this.rowOutlines.push(this.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(2))
       }
-      const rowTiles = rowIndex < this.puzzle.rows.length ? board.tiles.slice(rowIndex * 5, (rowIndex + 1) * 5) : board.targetTiles
+      const rowTiles = board.tiles.slice(rowIndex * 5, (rowIndex + 1) * 5)
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
         const center = this.slotCenter(slotIndex)
         const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5).setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, this.colorFor(result)).setDepth(0).setInteractive({ useHandCursor: true })
-        if (rowIndex < this.puzzle.rows.length) background.on("pointerdown", () => this.selectTile(slotIndex))
-        if (rowIndex < this.puzzle.rows.length) {
+        if (!isFrozen) background.on("pointerdown", () => this.selectTile(slotIndex))
+        if (!isFrozen) {
           this.slotBackgrounds.push(background)
           this.tileOutlines.push(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(3))
         }
@@ -594,7 +596,7 @@ export class MainScene extends Phaser.Scene {
         const tile = rowTiles[index]
         if (tile === undefined) return
         const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
-        if (rowIndex < this.puzzle.rows.length) this.tileSlots.push({ tile, text })
+        if (!isFrozen) this.tileSlots.push({ tile, text })
       })
     })
     const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
