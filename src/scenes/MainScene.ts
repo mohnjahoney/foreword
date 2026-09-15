@@ -583,7 +583,7 @@ export class MainScene extends Phaser.Scene {
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
         const center = this.slotCenter(slotIndex)
-        const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5).setDepth(0).setInteractive({ useHandCursor: true })
+        const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5).setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, this.colorFor(result)).setDepth(0).setInteractive({ useHandCursor: true })
         if (rowIndex < this.puzzle.rows.length) background.on("pointerdown", () => this.selectTile(slotIndex))
         if (rowIndex < this.puzzle.rows.length) {
           this.slotBackgrounds.push(background)
@@ -592,7 +592,7 @@ export class MainScene extends Phaser.Scene {
 
         const tile = rowTiles[index]
         if (tile === undefined) return
-        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
         if (rowIndex < this.puzzle.rows.length) this.tileSlots.push({ tile, text })
       })
     })
@@ -799,7 +799,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateSelection(): void {
-    this.slotBackgrounds.forEach((background) => background.setStrokeStyle(0))
+    this.slotBackgrounds.forEach((background, slotIndex) => {
+      const row = this.puzzle.rows[Math.floor(slotIndex / 5)]
+      const result = row?.pattern[slotIndex % 5] ?? "absent"
+      background.setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, this.colorFor(result))
+    })
     this.tileSlots.forEach((visual, slotIndex) => visual.text.setAngle(slotIndex === this.selectedSlot ? 30 : 0))
   }
 

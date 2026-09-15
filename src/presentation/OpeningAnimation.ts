@@ -68,7 +68,7 @@ export class OpeningAnimation {
         const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)
         const background = this.scene.add.rectangle(0, 0, CELL_SIZE, CELL_SIZE, COLORS.empty)
-          .setStrokeStyle(1.5, 0xc6bdae)
+          .setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, 0xc6bdae)
         const unknown = this.scene.add.text(0, 0, "*", {
           color: COLORS.ink,
           fontFamily: "Arial, sans-serif",
@@ -79,7 +79,7 @@ export class OpeningAnimation {
         const letter = this.scene.add.text(0, 0, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
           color: "#fffaf0",
           fontFamily: "Arial, sans-serif",
-          fontSize: "24px",
+          fontSize: `${BOARD_LAYOUT.letterFontSize}px`,
           fontStyle: "bold",
           resolution: RENDER_SCALE,
         }).setOrigin(0.5).setAlpha(0)
