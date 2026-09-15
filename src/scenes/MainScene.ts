@@ -725,11 +725,15 @@ export class MainScene extends Phaser.Scene {
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
     this.swapAnimating = true
+    first.text.setAngle(30)
+    second.text.setAngle(30)
     this.animateTextExchange(first.text, second.text, firstSlot, secondSlot, () => {
       const firstPoint = this.slotCenter(firstSlot)
       const secondPoint = this.slotCenter(secondSlot)
       first.text.setPosition(secondPoint.x, secondPoint.y).setDepth(10)
       second.text.setPosition(firstPoint.x, firstPoint.y).setDepth(10)
+      first.text.setAngle(0)
+      second.text.setAngle(0)
       this.swapAnimating = false
       this.updateRowFeedback()
     })
@@ -771,17 +775,22 @@ export class MainScene extends Phaser.Scene {
         const secondPoint = quadraticPoint(startSecond, secondControl, startFirst, progress)
         firstText.setPosition(firstPoint.x, firstPoint.y)
         secondText.setPosition(secondPoint.x, secondPoint.y)
+        firstText.setAngle(30 * (1 - progress))
+        secondText.setAngle(30 * (1 - progress))
       },
       onComplete: () => {
         firstText.setPosition(startSecond.x, startSecond.y)
         secondText.setPosition(startFirst.x, startFirst.y)
+        firstText.setAngle(0)
+        secondText.setAngle(0)
         onComplete()
       },
     })
   }
 
   private updateSelection(): void {
-    this.slotBackgrounds.forEach((background, slotIndex) => background.setStrokeStyle(slotIndex === this.selectedSlot ? 3 : 0, COLORS.selected))
+    this.slotBackgrounds.forEach((background) => background.setStrokeStyle(0))
+    this.tileSlots.forEach((visual, slotIndex) => visual.text.setAngle(slotIndex === this.selectedSlot ? 30 : 0))
   }
 
   private updateRowFeedback(): void {
@@ -1124,7 +1133,7 @@ export class MainScene extends Phaser.Scene {
     this.tileSlots.forEach((visual, slotIndex) => {
       visual.tile = { ...state[slotIndex]! }
       const center = this.slotCenter(slotIndex)
-      visual.text.setText(visual.tile.letter).setPosition(center.x, center.y).setDepth(10)
+      visual.text.setText(visual.tile.letter).setPosition(center.x, center.y).setDepth(10).setAngle(0)
     })
     this.updateLetterFeedback()
   }
