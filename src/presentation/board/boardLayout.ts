@@ -7,7 +7,7 @@ export const BOARD_LAYOUT = {
   rowPadding: 14,
   columns: 5,
   tileBorderWidth: 1.5,
-  letterFontSize: 27,
+  letterFontSize: 24,
 } as const
 
 export function boardSlotCenter(rowIndex: number, columnIndex: number): { x: number; y: number } {
