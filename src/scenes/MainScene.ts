@@ -19,6 +19,7 @@ import { addForewordHeader } from "../presentation/ForewordHeader"
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
 const CELL_SIZE = BOARD_LAYOUT.tileSize
 const OUTLINE_SIZE = CELL_SIZE + 5
+const SWAP_SELECTION_DELAY = 140
 
 interface TileVisual {
   tile: LetterTile
@@ -644,9 +645,18 @@ export class MainScene extends Phaser.Scene {
       return
     }
     const firstSlot = this.selectedSlot
-    this.swapTiles(firstSlot, slotIndex)
     this.selectedSlot = undefined
     this.updateSelection()
+    const first = this.tileSlots[firstSlot]
+    const second = this.tileSlots[slotIndex]
+    if (first === undefined || second === undefined) return
+    this.swapAnimating = true
+    first.text.setAngle(30)
+    second.text.setAngle(30)
+    this.time.delayedCall(SWAP_SELECTION_DELAY, () => {
+      this.swapAnimating = false
+      this.swapTiles(firstSlot, slotIndex)
+    })
   }
 
   private swapTiles(firstSlot: number, secondSlot: number): void {
