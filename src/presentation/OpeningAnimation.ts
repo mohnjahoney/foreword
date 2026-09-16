@@ -2,7 +2,8 @@ import Phaser from "phaser"
 import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
 import { RENDER_SCALE } from "../style/rendering"
-import { BOARD_LAYOUT, boardRowWidth, boardSlotCenter } from "./board/boardLayout"
+import { BOARD_LAYOUT, boardSlotCenter } from "./board/boardLayout"
+import { markCorrectTile } from "./board/correctTileMarks"
 import { addForewordHeader } from "./ForewordHeader"
 
 const COLORS = {
@@ -34,7 +35,6 @@ interface OpeningTile {
 export class OpeningAnimation {
   private readonly layer: Phaser.GameObjects.Container
   private readonly tiles: OpeningTile[] = []
-  private readonly rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private readonly timers: Phaser.Time.TimerEvent[] = []
   private finished = false
 
@@ -63,11 +63,6 @@ export class OpeningAnimation {
     const rows = this.scrambledBoard.rows
     rows.forEach(({ intendedGuess }, row) => {
       const rowTiles = this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5)
-      const rowWidth = boardRowWidth()
-      const y = BOARD_LAYOUT.top + row * BOARD_LAYOUT.rowStep
-      const outline = this.scene.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0)
-      this.rowOutlines.push(outline)
-      this.layer.add(outline)
       for (let column = 0; column < 5; column += 1) {
         const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)
@@ -81,7 +76,7 @@ export class OpeningAnimation {
           resolution: RENDER_SCALE,
         }).setOrigin(0.5).setAlpha(0)
         const letter = this.scene.add.text(0, 0, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
-          color: "#fffaf0",
+          color: "#fffdf7",
           fontFamily: "Arial, sans-serif",
           fontSize: `${BOARD_LAYOUT.letterFontSize}px`,
           fontStyle: "bold",
@@ -129,7 +124,7 @@ export class OpeningAnimation {
       ease: "Sine.In",
       onComplete: () => {
         tile.background.setFillStyle(COLORS[result]).setStrokeStyle(1.5, COLORS[result])
-        if (index >= 20) this.rowOutlines[4]?.setStrokeStyle(4, COLORS.correct)
+        markCorrectTile(tile.background, result === "correct")
         this.scene.tweens.add({ targets: tile.container, scaleY: 1, duration: FLIP_DURATION, ease: "Back.Out" })
       },
     })
@@ -138,7 +133,12 @@ export class OpeningAnimation {
   private crossfadeLetter(index: number): void {
     const tile = this.tiles[index]
     if (!tile) return
+    const destinationIndex = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
+    const destinationRow = Math.floor(destinationIndex / 5)
+    const destinationColumn = destinationIndex % 5
     this.scene.tweens.add({ targets: tile.unknown, alpha: 0, duration: splashTime(300), ease: "Sine.InOut" })
+    const destinationGuess = this.scrambledBoard.rows[destinationRow]?.intendedGuess
+    markCorrectTile(this.tiles[destinationIndex]?.background, tile.letter.text === destinationGuess?.[destinationColumn])
     this.scene.tweens.add({ targets: tile.letter, alpha: 1, duration: splashTime(300), ease: "Sine.InOut" })
   }
 

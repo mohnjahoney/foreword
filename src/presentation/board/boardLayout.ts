@@ -1,14 +1,21 @@
 export const BOARD_LAYOUT = {
   anchorX: 215,
   top: 150,
-  tileSize: 40,
-  gap: 7,
+  tileSize: 56,
+  gap: 10,
   rowStep: 73,
-  rowPadding: 14,
+  completionMarkGap: 3,
   columns: 5,
-  tileBorderWidth: 1.5,
-  letterFontSize: 24,
+  tileBorderWidth: 0.0,
+  letterFontSize: 32,
 } as const
+
+export const ROW_COMPLETION_MARK_RADIUS = 4
+export const ROW_COMPLETION_MARK_GAP = BOARD_LAYOUT.completionMarkGap
+
+export function boardRowCenter(rowIndex: number): number {
+  return BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep + BOARD_LAYOUT.tileSize / 2
+}
 
 export function boardSlotCenter(rowIndex: number, columnIndex: number): { x: number; y: number } {
   return {
@@ -17,6 +24,6 @@ export function boardSlotCenter(rowIndex: number, columnIndex: number): { x: num
   }
 }
 
-export function boardRowWidth(): number {
-  return BOARD_LAYOUT.columns * BOARD_LAYOUT.tileSize + (BOARD_LAYOUT.columns - 1) * BOARD_LAYOUT.gap + BOARD_LAYOUT.rowPadding
+export function boardTileSpan(): number {
+  return BOARD_LAYOUT.columns * BOARD_LAYOUT.tileSize + (BOARD_LAYOUT.columns - 1) * BOARD_LAYOUT.gap
 }

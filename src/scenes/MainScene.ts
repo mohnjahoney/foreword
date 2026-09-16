@@ -1,6 +1,5 @@
 import Phaser from "phaser"
 import { createScrambledBoard, type LetterTile, type ScrambledBoard } from "../core/board"
-import { evaluateGuess } from "../core/evaluateGuess"
 import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
@@ -8,17 +7,17 @@ import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
 import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, focusCardIndexAtX, layoutReviewCards, type ReviewCardRect } from "../core/reviewCards"
 import { TimelineExplorer } from "../core/timelineExplorer"
-import { ALLOWED_WORDS, ANSWER_WORDS, isAllowedWord } from "../core/words"
+import { ALLOWED_WORDS, ANSWER_WORDS } from "../core/words"
 import { createSeededRandom, nextPuzzleSeed, normalizeSeed, seedFromCurrentTime } from "../core/seededRandom"
 import { configureLogicalCamera, RENDER_SCALE } from "../style/rendering"
 import { startPuzzleAnalytics, trackForewordEvent, trackSessionStarted } from "../analytics/tracker"
 import { OpeningAnimation } from "../presentation/OpeningAnimation"
-import { BOARD_LAYOUT, boardRowWidth, boardSlotCenter } from "../presentation/board/boardLayout"
+import { BOARD_LAYOUT, boardSlotCenter } from "../presentation/board/boardLayout"
+import { markCorrectTile } from "../presentation/board/correctTileMarks"
 import { addForewordHeader } from "../presentation/ForewordHeader"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
 const CELL_SIZE = BOARD_LAYOUT.tileSize
-const OUTLINE_SIZE = CELL_SIZE + 5
 const SWAP_SELECTION_DELAY = 140
 const SWAP_ANIMATION_DURATION = 480
 
@@ -44,9 +43,8 @@ export class MainScene extends Phaser.Scene {
   private tileSlots: TileVisual[] = []
   private initialTileIds: number[] = []
   private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
-  private tileOutlines: Phaser.GameObjects.Rectangle[] = []
+  private tileBackgrounds: Phaser.GameObjects.Rectangle[] = []
   private selectedSlot: number | undefined
-  private rowOutlines: Phaser.GameObjects.Rectangle[] = []
   private swapDirection = 1
   private swapAnimating = false
   private movesTaken = 0
@@ -129,8 +127,7 @@ export class MainScene extends Phaser.Scene {
     this.tileSlots = []
     this.initialTileIds = []
     this.slotBackgrounds = []
-    this.tileOutlines = []
-    this.rowOutlines = []
+    this.tileBackgrounds = []
     this.selectedSlot = undefined
     this.swapAnimating = false
     this.movesTaken = 0
@@ -576,31 +573,27 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles.slice(0, movableTileCount))
     const rows = board.rows
     rows.forEach((row, rowIndex) => {
-      const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
-      const rowWidth = boardRowWidth()
       const isFrozen = board.frozenRows.includes(rowIndex)
-      const outline = this.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(isFrozen ? 4 : 0, COLORS.correct).setDepth(2)
-      if (!isFrozen) this.rowOutlines.push(outline)
       const rowTiles = board.tiles.slice(rowIndex * 5, (rowIndex + 1) * 5)
       row.pattern.forEach((result, index) => {
         const slotIndex = rowIndex * 5 + index
         const center = this.slotCenter(slotIndex)
         const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5).setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, this.colorFor(result)).setDepth(0).setInteractive({ useHandCursor: true })
+        this.tileBackgrounds.push(background)
         if (!isFrozen) background.on("pointerdown", () => this.selectTile(slotIndex))
         if (!isFrozen) {
           this.slotBackgrounds.push(background)
-          this.tileOutlines.push(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0).setDepth(3))
         }
 
         const tile = rowTiles[index]
         if (tile === undefined) return
-        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffdf7", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
         if (!isFrozen) this.tileSlots.push({ tile, text })
       })
     })
     const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
     this.playerPath = [{ tiles: initialTiles, deltaCorrect: 0, correctCount: countCorrectTiles(this.puzzle, initialTiles) }]
-    this.updateLetterFeedback()
+    this.updateRowFeedback()
   }
 
   private resetPuzzle(): void {
@@ -810,30 +803,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateRowFeedback(): void {
-    this.updateLetterFeedback()
-    this.puzzle.rows.forEach((row, rowIndex) => {
-      const word = this.tileSlots
-        .slice(rowIndex * 5, (rowIndex + 1) * 5)
-        .map((visual) => visual.tile.letter)
-        .join("")
-      const outline = this.rowOutlines[rowIndex]
-      if (outline === undefined) return
-      if (word === row.intendedGuess) {
-        outline.setStrokeStyle(4, 0x8FAF83)
-      } else if (isAllowedWord(word) && patternsMatch(evaluateGuess(word, this.puzzle.target), row.pattern)) {
-        outline.setStrokeStyle(4, 0xc49f52)
-      } else {
-        outline.setStrokeStyle(0)
-      }
-    })
-  }
-
-  private updateLetterFeedback(): void {
-    this.tileOutlines.forEach((outline, slotIndex) => {
+    this.tileBackgrounds.forEach((_background, slotIndex) => {
       const rowIndex = Math.floor(slotIndex / 5)
-      const showIndividualOutline = !this.isRowCorrect(rowIndex) && this.isLetterCorrectAtSlot(slotIndex)
-      // outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x4c7b43)
-      outline.setStrokeStyle(showIndividualOutline ? 4 : 0, 0x8FAF83)
+      const correct = rowIndex === this.puzzle.rows.length || this.isLetterCorrectAtSlot(slotIndex)
+      this.tileBackgrounds[slotIndex]?.setSize(CELL_SIZE, CELL_SIZE)
+      markCorrectTile(this.tileBackgrounds[slotIndex], correct)
     })
   }
 
@@ -1151,7 +1125,6 @@ export class MainScene extends Phaser.Scene {
       const center = this.slotCenter(slotIndex)
       visual.text.setText(visual.tile.letter).setPosition(center.x, center.y).setDepth(10).setAngle(0)
     })
-    this.updateLetterFeedback()
   }
 
   private drawReviewBoard(state: readonly LetterTile[]): void {
@@ -1159,19 +1132,15 @@ export class MainScene extends Phaser.Scene {
     this.reviewBoard.removeAll(true)
     this.reviewTileTexts = []
     this.puzzle.rows.forEach((row, rowIndex) => {
-      const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
-      const rowWidth = boardRowWidth()
-      const word = state.slice(rowIndex * 5, (rowIndex + 1) * 5).map((tile) => tile.letter).join("")
-      this.reviewBoard?.add(this.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(word === row.intendedGuess ? 4 : 0, 0x8faf83))
       row.pattern.forEach((result, columnIndex) => {
         const slotIndex = rowIndex * 5 + columnIndex
         const center = this.slotCenter(slotIndex)
-        this.reviewBoard?.add(this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5))
         const tile = state[slotIndex]
         if (tile === undefined) return
-        const individualCorrect = tile.letter === row.intendedGuess[columnIndex] && word !== row.intendedGuess
-        this.reviewBoard?.add(this.add.rectangle(center.x, center.y, OUTLINE_SIZE, OUTLINE_SIZE).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(individualCorrect ? 4 : 0, 0x8faf83))
-        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffaf0", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+        const background = this.add.rectangle(center.x, center.y, CELL_SIZE, CELL_SIZE, this.colorFor(result)).setOrigin(0.5)
+        this.reviewBoard?.add(background)
+        const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffdf7", fontFamily: "Arial, sans-serif", fontSize: "27px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+        markCorrectTile(background, tile.letter === row.intendedGuess[columnIndex])
         this.reviewBoard?.add(text)
         this.reviewTileTexts[slotIndex] = text
       })
@@ -1190,13 +1159,6 @@ function quadraticPoint(
     x: remaining * remaining * start.x + 2 * remaining * progress * control.x + progress * progress * end.x,
     y: remaining * remaining * start.y + 2 * remaining * progress * control.y + progress * progress * end.y,
   }
-}
-
-function patternsMatch(
-  actual: ForewordPuzzle["rows"][number]["pattern"],
-  expected: ForewordPuzzle["rows"][number]["pattern"],
-): boolean {
-  return actual.every((result, index) => result === expected[index])
 }
 
 function clampTileMinimum(value: number): number {
