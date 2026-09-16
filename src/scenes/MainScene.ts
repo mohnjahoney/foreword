@@ -579,7 +579,7 @@ export class MainScene extends Phaser.Scene {
       const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
       const rowWidth = boardRowWidth()
       const isFrozen = board.frozenRows.includes(rowIndex)
-      const outline = this.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(isFrozen ? 4 : 0, COLORS.correct).setDepth(2)
+      const outline = this.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(isFrozen ? 4 : 0, COLORS.correct).setDepth(2)
       if (!isFrozen) this.rowOutlines.push(outline)
       const rowTiles = board.tiles.slice(rowIndex * 5, (rowIndex + 1) * 5)
       row.pattern.forEach((result, index) => {
@@ -1162,7 +1162,7 @@ export class MainScene extends Phaser.Scene {
       const y = BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep
       const rowWidth = boardRowWidth()
       const word = state.slice(rowIndex * 5, (rowIndex + 1) * 5).map((tile) => tile.letter).join("")
-      this.reviewBoard?.add(this.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(word === row.intendedGuess ? 4 : 0, 0x8faf83))
+      this.reviewBoard?.add(this.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(word === row.intendedGuess ? 4 : 0, 0x8faf83))
       row.pattern.forEach((result, columnIndex) => {
         const slotIndex = rowIndex * 5 + columnIndex
         const center = this.slotCenter(slotIndex)

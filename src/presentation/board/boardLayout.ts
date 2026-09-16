@@ -1,5 +1,5 @@
 export const BOARD_LAYOUT = {
-  left: 75,
+  anchorX: 215,
   top: 150,
   tileSize: 40,
   gap: 7,
@@ -12,7 +12,7 @@ export const BOARD_LAYOUT = {
 
 export function boardSlotCenter(rowIndex: number, columnIndex: number): { x: number; y: number } {
   return {
-    x: BOARD_LAYOUT.left + columnIndex * (BOARD_LAYOUT.tileSize + BOARD_LAYOUT.gap) + BOARD_LAYOUT.tileSize / 2,
+    x: BOARD_LAYOUT.anchorX + (columnIndex - (BOARD_LAYOUT.columns - 1) / 2) * (BOARD_LAYOUT.tileSize + BOARD_LAYOUT.gap),
     y: BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep + BOARD_LAYOUT.tileSize / 2,
   }
 }

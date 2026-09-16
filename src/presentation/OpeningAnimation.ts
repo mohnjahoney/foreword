@@ -65,7 +65,7 @@ export class OpeningAnimation {
       const rowTiles = this.scrambledBoard.initialTiles.slice(row * 5, (row + 1) * 5)
       const rowWidth = boardRowWidth()
       const y = BOARD_LAYOUT.top + row * BOARD_LAYOUT.rowStep
-      const outline = this.scene.add.rectangle(BOARD_LAYOUT.left - 7 + rowWidth / 2, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0)
+      const outline = this.scene.add.rectangle(BOARD_LAYOUT.anchorX, y - 7 + (CELL_SIZE + BOARD_LAYOUT.rowPadding) / 2, rowWidth, CELL_SIZE + BOARD_LAYOUT.rowPadding).setOrigin(0.5).setFillStyle(0, 0).setStrokeStyle(0)
       this.rowOutlines.push(outline)
       this.layer.add(outline)
       for (let column = 0; column < 5; column += 1) {
