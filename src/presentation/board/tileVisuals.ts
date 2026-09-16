@@ -57,8 +57,6 @@ export function createTileBackground(
   const background = scene.add.rectangle(center.x, center.y, BOARD_LAYOUT.tileSize, BOARD_LAYOUT.tileSize, color)
     .setOrigin(0.5)
     .setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, color)
-  if (result !== undefined && presentation.showEvaluation) markCorrectTile(background, result === "correct")
-  else if (presentation.showEvaluation) markCorrectTile(background, false)
   return background
 }
 

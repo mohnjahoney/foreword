@@ -1,9 +1,10 @@
 import Phaser from "phaser"
-import { createScrambledBoard, type LetterTile, type ScrambledBoard } from "../core/board"
+import { createScrambledBoard, type Letter, type LetterTile, type ScrambledBoard } from "../core/board"
 import { createWerdolPuzzle, type WerdolPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
 import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
-import { countCorrectTiles, createReferencePath, swapTileState, type ReviewState } from "../core/reviewPath"
+import { countCorrectTiles, createReferencePath, type ReviewState } from "../core/reviewPath"
+import { countCorrectOccupancy, isLetterCorrectAtSlot, swapOccupancy, tilesFromOccupancy } from "../core/boardState"
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
 import { cardWidthForPath, createReviewCardRects, DEFAULT_REVIEW_CARD_CONFIG, focusCardIndexAtX, layoutReviewCards, type ReviewCardRect } from "../core/reviewCards"
 import { TimelineExplorer } from "../core/timelineExplorer"
@@ -43,6 +44,9 @@ const PENDING_SETUP_STORAGE_KEY = "werdol-pending-setup"
 export class MainScene extends Phaser.Scene {
   private puzzle!: WerdolPuzzle
   private tileSlots: TileVisual[] = []
+  private letters: Letter[] = []
+  private occupancy: number[] = []
+  private initialOccupancy: number[] = []
   private initialTileIds: number[] = []
   private slotBackgrounds: Phaser.GameObjects.Rectangle[] = []
   private tileBackgrounds: Phaser.GameObjects.Rectangle[] = []
@@ -128,6 +132,9 @@ export class MainScene extends Phaser.Scene {
     pendingSceneData = undefined
     configureLogicalCamera(this)
     this.tileSlots = []
+    this.letters = []
+    this.occupancy = []
+    this.initialOccupancy = []
     this.initialTileIds = []
     this.slotBackgrounds = []
     this.tileBackgrounds = []
@@ -332,7 +339,7 @@ export class MainScene extends Phaser.Scene {
     if (this.puzzleCreationFailed) {
       return
     }
-    const next = findNextSwap(this.puzzle, this.tileSlots.map((visual) => visual.tile))
+    const next = findNextSwap(this.puzzle, tilesFromOccupancy(this.occupancy, this.letters))
     if (next === undefined) {
       return
     }
@@ -604,6 +611,9 @@ export class MainScene extends Phaser.Scene {
     const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom)
     this.preparedBoard = undefined
     const movableTileCount = this.puzzle.rows.length * 5
+    this.letters = board.letters
+    this.occupancy = board.occupancy.slice(0, movableTileCount)
+    this.initialOccupancy = board.initialOccupancy.slice(0, movableTileCount)
     this.initialTileIds = board.tiles.slice(0, movableTileCount).map((tile) => tile.id)
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles.slice(0, movableTileCount))
     const rows = board.rows
@@ -626,7 +636,7 @@ export class MainScene extends Phaser.Scene {
         if (!isFrozen) this.tileSlots.push({ tile, text })
       })
     })
-    const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
+    const initialTiles = tilesFromOccupancy(this.occupancy, this.letters)
     this.playerPath = [{ tiles: initialTiles, deltaCorrect: 0, correctCount: countCorrectTiles(this.puzzle, initialTiles) }]
     this.updateRowFeedback()
   }
@@ -644,12 +654,13 @@ export class MainScene extends Phaser.Scene {
     this.puzzleEndedTracked = false
 
     this.tileSlots = resetSlots as TileVisual[]
+    this.occupancy = [...this.initialOccupancy]
     this.tileSlots.forEach((visual, slotIndex) => {
       const center = this.slotCenter(slotIndex)
       visual.text.setPosition(center.x, center.y).setDepth(10)
     })
     this.movesTaken = 0
-    const resetTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
+    const resetTiles = tilesFromOccupancy(this.occupancy, this.letters)
     this.playerPath = [{ tiles: resetTiles, deltaCorrect: 0, correctCount: countCorrectTiles(this.puzzle, resetTiles) }]
     this.minimumMoves = countAlgorithmicMoves(this.puzzle, resetTiles)
     this.selectedSlot = undefined
@@ -693,14 +704,15 @@ export class MainScene extends Phaser.Scene {
     const first = this.tileSlots[firstSlot]
     const second = this.tileSlots[secondSlot]
     if (first === undefined || second === undefined) return
-    const currentTiles = this.tileSlots.map((visual) => visual.tile)
     const previouslyCorrect = this.puzzle.rows.map((_row, rowIndex) => this.isRowCorrect(rowIndex))
-    const nextTiles = swapTileState(currentTiles, firstSlot, secondSlot)
-    const currentCorrect = countCorrectTiles(this.puzzle, currentTiles)
-    const nextCorrect = countCorrectTiles(this.puzzle, nextTiles)
+    const nextOccupancy = swapOccupancy(this.occupancy, firstSlot, secondSlot)
+    const nextTiles = tilesFromOccupancy(nextOccupancy, this.letters)
+    const currentCorrect = countCorrectOccupancy(this.puzzle, this.occupancy, this.letters)
+    const nextCorrect = countCorrectOccupancy(this.puzzle, nextOccupancy, this.letters)
     this.playerPath.push({ tiles: nextTiles.map((tile) => ({ ...tile })), deltaCorrect: nextCorrect - currentCorrect, correctCount: nextCorrect, swap: { firstSlot, secondSlot } })
     this.tileSlots[firstSlot] = second
     this.tileSlots[secondSlot] = first
+    this.occupancy = nextOccupancy
     this.movesTaken += 1
     trackWerdolEvent("werdol:move_executed", {
       puzzleId: this.puzzleId,
@@ -758,7 +770,7 @@ export class MainScene extends Phaser.Scene {
       return
     }
 
-    const sourceSlot = this.tileSlots.findIndex((visual, index) => visual.tile.letter === expectedLetter && index !== slotIndex && !this.isLetterCorrectAtSlot(index))
+    const sourceSlot = this.occupancy.findIndex((letterId, index) => this.letters[letterId]?.character === expectedLetter && index !== slotIndex && !this.isLetterCorrectAtSlot(index))
     if (sourceSlot < 0) {
       return
     }
@@ -767,20 +779,14 @@ export class MainScene extends Phaser.Scene {
   }
 
   private isLetterCorrectAtSlot(slotIndex: number): boolean {
-    const rowIndex = Math.floor(slotIndex / 5)
-    const columnIndex = slotIndex % 5
-    const row = this.puzzle.rows[rowIndex]
-    const visual = this.tileSlots[slotIndex]
-    return row !== undefined && visual !== undefined && visual.tile.letter === row.intendedGuess[columnIndex]
+    return isLetterCorrectAtSlot(this.puzzle, this.occupancy, this.letters, slotIndex)
   }
 
   private isRowCorrect(rowIndex: number): boolean {
-    const row = this.puzzle.rows[rowIndex]
-    if (row === undefined) return false
-    return this.tileSlots
+    return this.puzzle.rows[rowIndex]?.intendedGuess !== undefined && this.occupancy
       .slice(rowIndex * 5, (rowIndex + 1) * 5)
-      .map((visual) => visual.tile.letter)
-      .join("") === row.intendedGuess
+      .map((letterId) => this.letters[letterId]?.character ?? "")
+      .join("") === this.puzzle.rows[rowIndex]?.intendedGuess
   }
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
@@ -1175,6 +1181,7 @@ export class MainScene extends Phaser.Scene {
     const nextVisuals = state.map((tile) => visualsById.get(tile.id)).filter((visual): visual is TileVisual => visual !== undefined)
     if (nextVisuals.length !== this.tileSlots.length) return
     this.tileSlots = nextVisuals
+    this.occupancy = state.map((tile) => tile.id)
     this.tileSlots.forEach((visual, slotIndex) => {
       visual.tile = { ...state[slotIndex]! }
       const center = this.slotCenter(slotIndex)

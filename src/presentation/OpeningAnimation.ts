@@ -2,7 +2,7 @@ import Phaser from "phaser"
 import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
 import { boardSlotCenter } from "./board/boardLayout"
-import { stopCorrectTileMarkAnimation } from "./board/correctTileMarks"
+import { animateCorrectTileMark, stopCorrectTileMarkAnimation } from "./board/correctTileMarks"
 import { applyTileEvaluation, createTileAsterisk, createTileBackground, createTileLetter, SPLASH_PRESENTATION, type BoardPresentation } from "./board/tileVisuals"
 import { addWerdolHeader } from "./WerdolHeader"
 
@@ -16,6 +16,8 @@ const ENTRY_INTERVAL = splashTime(112)
 const ROW_INTERVAL = splashTime(1_470)
 const FLIP_DURATION = splashTime(145)
 const SHUFFLE_DURATION = splashTime(1_250)
+const SHUFFLE_STAGGER = splashTime(18) * 4
+const POST_SHUFFLE_PAUSE = 500
 
 interface OpeningTile {
   container: Phaser.GameObjects.Container
@@ -37,6 +39,7 @@ export class OpeningAnimation {
   private readonly tiles: OpeningTile[] = []
   private readonly timers: Phaser.Time.TimerEvent[] = []
   private readonly presentation: BoardPresentation
+  private occupancy: number[]
   private finished = false
 
   constructor(
@@ -50,6 +53,7 @@ export class OpeningAnimation {
       showAsterisks: this.options.showAsterisk !== false,
       showEvaluation: this.options.showMarkup !== false,
     }
+    this.occupancy = [...scrambledBoard.initialOccupancy]
     this.layer = scene.add.container(0, 0).setDepth(10_000)
     this.letterLayer = scene.add.container(0, 0).setDepth(100)
     this.layer.add(scene.add.rectangle(215, 380, 430, 760, COLORS.paper).setInteractive())
@@ -149,8 +153,9 @@ export class OpeningAnimation {
   }
 
   private shuffleUnknown(): void {
+    this.occupancy = [...this.scrambledBoard.occupancy]
     this.tiles.slice(0, 20).forEach((tile, index) => {
-      const destinationIndex = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
+      const destinationIndex = this.occupancy.findIndex((letterId) => letterId === index)
       const destinationRow = Math.floor(destinationIndex / 5)
       const destinationColumn = destinationIndex % 5
       const destination = boardSlotCenter(destinationRow, destinationColumn)
@@ -166,12 +171,26 @@ export class OpeningAnimation {
     this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION * 0.25, () => {
       for (let index = 0; index < 20; index += 1) this.crossfadeLetter(index)
     }))
-    this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION, () => {
+    this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION + SHUFFLE_STAGGER, () => {
+      if (this.finished) return
+      this.applyFinalOccupancyMarks()
+    }))
+    this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION + SHUFFLE_STAGGER + POST_SHUFFLE_PAUSE, () => {
         if (this.finished) return
         this.finished = true
         this.destroy()
         this.onComplete()
     }))
+  }
+
+  private applyFinalOccupancyMarks(): void {
+    this.occupancy.forEach((letterId, slotIndex) => {
+      const tile = this.tiles[slotIndex]
+      const letter = this.scrambledBoard.letters[letterId]
+      const boardTile = this.scrambledBoard.boardTiles[slotIndex]
+      if (!tile || !letter || !boardTile) return
+      animateCorrectTileMark(this.scene, tile.background, letter.character === boardTile.targetCharacter)
+    })
   }
 
   private after(delay: number, callback: () => void): void {
