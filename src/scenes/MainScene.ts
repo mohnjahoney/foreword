@@ -764,7 +764,22 @@ export class MainScene extends Phaser.Scene {
     })
     const rows = Array.from({ length: this.puzzle.rows.length + 1 }, (_value, rowIndex) => groups.slice(rowIndex * 5, (rowIndex + 1) * 5))
     if (puzzleComplete) {
-      celebrateCompletedPuzzle(this, rows.slice(0, this.puzzle.rows.length))
+      const playableRows = rows.slice(0, this.puzzle.rows.length)
+      let remainingRows = completedRows.length
+      const startPuzzleCelebration = (): void => {
+        if (remainingRows > 0) return
+        celebrateCompletedPuzzle(this, playableRows)
+      }
+      if (remainingRows === 0) {
+        startPuzzleCelebration()
+      } else {
+        completedRows.forEach((rowIndex) => {
+          celebrateCompletedRow(this, rows[rowIndex] ?? [], () => {
+            remainingRows -= 1
+            startPuzzleCelebration()
+          })
+        })
+      }
       return
     }
     completedRows.forEach((rowIndex) => celebrateCompletedRow(this, rows[rowIndex] ?? []))
