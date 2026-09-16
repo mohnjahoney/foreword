@@ -280,7 +280,7 @@ export class MainScene extends Phaser.Scene {
     const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.18).setOrigin(0, 0).setInteractive()
     const panel = this.add.rectangle(35, 260, 360, 230, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
     const title = this.add.text(55, 282, "HOW TO PLAY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
-    const instructions = this.add.text(55, 320, "Tap two letters to swap them.\n\nRebuild each row using the colored clues.\nGreen is correct, yellow is misplaced, gray is absent.\n\nSolve all four rows in as few moves as possible.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 315 }, resolution: RENDER_SCALE })
+    const instructions = this.add.text(55, 320, "WERDOL begins where Wordle ends.\n\nThe board is already evaluated: the target word is correct, and the colors in the first four rows are in place—but their letters have been mixed up.\n\nTap two letters to swap them. Rebuild the four rows in as few moves as possible.\nGreen is correct, yellow is misplaced, and gray is absent.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 315 }, resolution: RENDER_SCALE })
     this.howToPlayOverlay.add([backdrop, panel, title, instructions])
     infoButton.on("pointerdown", () => this.howToPlayOverlay.setVisible(!this.howToPlayOverlay.visible))
     backdrop.on("pointerdown", () => this.howToPlayOverlay.setVisible(false))
