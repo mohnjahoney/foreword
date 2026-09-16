@@ -207,9 +207,9 @@ export class MainScene extends Phaser.Scene {
     })
     this.buildMoveInfo()
     this.buildInteractionTools()
+    this.buildNewPuzzleButton()
     if (import.meta.env.DEV) {
       this.buildDevPanel()
-      this.buildNewPuzzleButton()
     }
   }
 
