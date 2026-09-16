@@ -8,13 +8,17 @@ export interface ProposedSwap {
   improvement: 1 | 2
 }
 
+function expectedCharacter(puzzle: WerdolPuzzle, slotIndex: number): string | undefined {
+  const rowIndex = Math.floor(slotIndex / TILES_PER_ROW)
+  const row = puzzle.rows[rowIndex]
+  return (rowIndex === puzzle.rows.length ? puzzle.target : row?.intendedGuess)?.[slotIndex % TILES_PER_ROW]
+}
+
 export function findNextSwap(puzzle: WerdolPuzzle, tiles: readonly LetterTile[]): ProposedSwap | undefined {
-  const totalSlots = puzzle.rows.length * TILES_PER_ROW
+  const totalSlots = (puzzle.rows.length + 1) * TILES_PER_ROW
   const correct = (slotIndex: number): boolean => {
     const tile = tiles[slotIndex]
-    const row = puzzle.rows[Math.floor(slotIndex / TILES_PER_ROW)]
-    const column = slotIndex % TILES_PER_ROW
-    return tile !== undefined && row !== undefined && tile.letter === row.intendedGuess[column]
+    return tile !== undefined && tile.letter === expectedCharacter(puzzle, slotIndex)
   }
   const correctCount = (): number => tiles.reduce((count, _tile, slotIndex) => count + (correct(slotIndex) ? 1 : 0), 0)
   const currentCorrect = correctCount()
@@ -32,9 +36,7 @@ export function findNextSwap(puzzle: WerdolPuzzle, tiles: readonly LetterTile[])
       afterSwap[secondSlot] = firstTile
       const improvement = afterSwap.reduce((count, _tile, slotIndex) => {
         const tile = afterSwap[slotIndex]
-        const row = puzzle.rows[Math.floor(slotIndex / TILES_PER_ROW)]
-        const column = slotIndex % TILES_PER_ROW
-        return count + (tile !== undefined && row !== undefined && tile.letter === row.intendedGuess[column] ? 1 : 0)
+        return count + (tile !== undefined && tile.letter === expectedCharacter(puzzle, slotIndex) ? 1 : 0)
       }, 0) - currentCorrect
       if (improvement === 2) return { firstSlot, secondSlot, improvement }
     }
@@ -42,8 +44,7 @@ export function findNextSwap(puzzle: WerdolPuzzle, tiles: readonly LetterTile[])
 
   const firstSlot = Array.from({ length: totalSlots }, (_value, slotIndex) => slotIndex).find((slotIndex) => !correct(slotIndex))
   if (firstSlot === undefined) return undefined
-  const row = puzzle.rows[Math.floor(firstSlot / TILES_PER_ROW)]
-  const expectedLetter = row?.intendedGuess[firstSlot % TILES_PER_ROW]
+  const expectedLetter = expectedCharacter(puzzle, firstSlot)
   if (expectedLetter === undefined) return undefined
   const secondSlot = Array.from({ length: totalSlots }, (_value, slotIndex) => slotIndex).find(
     (slotIndex) => slotIndex !== firstSlot && !correct(slotIndex) && tiles[slotIndex]?.letter === expectedLetter,

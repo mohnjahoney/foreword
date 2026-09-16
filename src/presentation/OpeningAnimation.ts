@@ -154,8 +154,13 @@ export class OpeningAnimation {
 
   private shuffleUnknown(): void {
     this.occupancy = [...this.scrambledBoard.occupancy]
-    this.tiles.slice(0, 20).forEach((tile, index) => {
-      const destinationIndex = this.occupancy.findIndex((letterId) => letterId === index)
+    const movableLetterIds = this.scrambledBoard.initialOccupancy.filter((_letterId, slotIndex) => (
+      !this.scrambledBoard.frozenRows.includes(Math.floor(slotIndex / 5))
+    ))
+    movableLetterIds.forEach((letterId) => {
+      const tile = this.tiles[letterId]
+      const destinationIndex = this.occupancy.findIndex((occupyingLetterId) => occupyingLetterId === letterId)
+      if (!tile || destinationIndex < 0) return
       const destinationRow = Math.floor(destinationIndex / 5)
       const destinationColumn = destinationIndex % 5
       const destination = boardSlotCenter(destinationRow, destinationColumn)
@@ -164,12 +169,12 @@ export class OpeningAnimation {
         x: destination.x,
         y: destination.y,
         duration: SHUFFLE_DURATION,
-        delay: (index % 5) * splashTime(18),
+        delay: (letterId % 5) * splashTime(18),
         ease: "Cubic.InOut",
       })
     })
     this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION * 0.25, () => {
-      for (let index = 0; index < 20; index += 1) this.crossfadeLetter(index)
+      movableLetterIds.forEach((letterId) => this.crossfadeLetter(letterId))
     }))
     this.timers.push(this.scene.time.delayedCall(SHUFFLE_DURATION + SHUFFLE_STAGGER, () => {
       if (this.finished) return

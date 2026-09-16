@@ -32,8 +32,10 @@ export function isLetterCorrectAtSlot(
 ): boolean {
   const letterId = occupancy[slotIndex]
   const letter = letterId === undefined ? undefined : letters[letterId]
-  const row = puzzle.rows[Math.floor(slotIndex / TILES_PER_ROW)]
-  return letter !== undefined && row?.intendedGuess[slotIndex % TILES_PER_ROW] === letter.character
+  const rowIndex = Math.floor(slotIndex / TILES_PER_ROW)
+  const row = puzzle.rows[rowIndex]
+  const target = rowIndex === puzzle.rows.length ? puzzle.target : row?.intendedGuess
+  return letter !== undefined && target?.[slotIndex % TILES_PER_ROW] === letter.character
 }
 
 export function countCorrectOccupancy(

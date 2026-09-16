@@ -7,13 +7,14 @@ describe("board state", () => {
   it("swaps letter identities and derives the same tile model used by the game", () => {
     const puzzle = createWerdolPuzzle(() => 0.25)
     const board = createScrambledBoard(puzzle, () => 0.5)
-    const starting = board.occupancy.slice(0, 20)
+    const starting = board.occupancy
     const next = swapOccupancy(starting, 0, 1)
     const tiles = tilesFromOccupancy(next, board.letters)
 
     expect(next[0]).toBe(starting[1])
     expect(next[1]).toBe(starting[0])
     expect(tiles.map((tile) => tile.id)).toEqual(next)
+    expect(isLetterCorrectAtSlot(puzzle, starting, board.letters, 20)).toBe(true)
     expect(countCorrectOccupancy(puzzle, starting, board.letters)).toBe(
       starting.reduce((count, _letterId, slotIndex) => count + (isLetterCorrectAtSlot(puzzle, starting, board.letters, slotIndex) ? 1 : 0), 0),
     )

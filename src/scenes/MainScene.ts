@@ -610,12 +610,11 @@ export class MainScene extends Phaser.Scene {
   private buildBoard(): void {
     const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom)
     this.preparedBoard = undefined
-    const movableTileCount = this.puzzle.rows.length * 5
     this.letters = board.letters
-    this.occupancy = board.occupancy.slice(0, movableTileCount)
-    this.initialOccupancy = board.initialOccupancy.slice(0, movableTileCount)
-    this.initialTileIds = board.tiles.slice(0, movableTileCount).map((tile) => tile.id)
-    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles.slice(0, movableTileCount))
+    this.occupancy = [...board.occupancy]
+    this.initialOccupancy = [...board.initialOccupancy]
+    this.initialTileIds = board.tiles.map((tile) => tile.id)
+    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
     const rows = board.rows
     rows.forEach((row, rowIndex) => {
       const isFrozen = board.frozenRows.includes(rowIndex)
@@ -626,6 +625,7 @@ export class MainScene extends Phaser.Scene {
         const background = createTileBackground(this, center, result, GAME_PRESENTATION).setDepth(0).setInteractive({ useHandCursor: true })
         this.tileBackgrounds.push(background)
         if (!isFrozen) background.on("pointerdown", () => this.selectTile(slotIndex))
+        else background.on("pointerdown", () => this.showAlreadyCompleteWord(rowIndex))
         if (!isFrozen) {
           this.slotBackgrounds.push(background)
         }
@@ -633,7 +633,7 @@ export class MainScene extends Phaser.Scene {
         const tile = rowTiles[index]
         if (tile === undefined) return
         const text = createTileLetter(this, center, tile.letter, GAME_PRESENTATION)
-        if (!isFrozen) this.tileSlots.push({ tile, text })
+        this.tileSlots.push({ tile, text })
       })
     })
     const initialTiles = tilesFromOccupancy(this.occupancy, this.letters)
@@ -671,6 +671,13 @@ export class MainScene extends Phaser.Scene {
 
   private selectTile(slotIndex: number): void {
     if (this.swapAnimating) return
+    const rowIndex = Math.floor(slotIndex / 5)
+    if (this.isRowCorrect(rowIndex)) {
+      this.selectedSlot = undefined
+      this.updateSelection()
+      this.showAlreadyCompleteWord(rowIndex)
+      return
+    }
     if (this.interactionMode === "reveal") {
       this.revealTile(slotIndex)
       return
@@ -698,6 +705,10 @@ export class MainScene extends Phaser.Scene {
       this.swapAnimating = false
       this.swapTiles(firstSlot, slotIndex)
     })
+  }
+
+  private showAlreadyCompleteWord(rowIndex: number): void {
+    this.playCompletionCelebration([rowIndex], false)
   }
 
   private swapTiles(firstSlot: number, secondSlot: number): void {
@@ -751,9 +762,9 @@ export class MainScene extends Phaser.Scene {
       const background = this.tileBackgrounds[slotIndex]
       return background === undefined ? [visual.text] : [background, visual.text]
     })
-    const rows = Array.from({ length: this.puzzle.rows.length }, (_value, rowIndex) => groups.slice(rowIndex * 5, (rowIndex + 1) * 5))
+    const rows = Array.from({ length: this.puzzle.rows.length + 1 }, (_value, rowIndex) => groups.slice(rowIndex * 5, (rowIndex + 1) * 5))
     if (puzzleComplete) {
-      celebrateCompletedPuzzle(this, rows)
+      celebrateCompletedPuzzle(this, rows.slice(0, this.puzzle.rows.length))
       return
     }
     completedRows.forEach((rowIndex) => celebrateCompletedRow(this, rows[rowIndex] ?? []))
@@ -783,10 +794,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private isRowCorrect(rowIndex: number): boolean {
-    return this.puzzle.rows[rowIndex]?.intendedGuess !== undefined && this.occupancy
+    const target = rowIndex === this.puzzle.rows.length ? this.puzzle.target : this.puzzle.rows[rowIndex]?.intendedGuess
+    return target !== undefined && this.occupancy
       .slice(rowIndex * 5, (rowIndex + 1) * 5)
       .map((letterId) => this.letters[letterId]?.character ?? "")
-      .join("") === this.puzzle.rows[rowIndex]?.intendedGuess
+      .join("") === target
   }
 
   private animateExchange(first: TileVisual, second: TileVisual, firstSlot: number, secondSlot: number): void {
