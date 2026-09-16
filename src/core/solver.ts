@@ -1,9 +1,9 @@
 import { evaluateGuess, normalizeWord, WORD_LENGTH } from "./evaluateGuess"
 import { ALLOWED_WORDS } from "./words"
-import type { ForewordPuzzle, ForewordRow } from "./puzzle"
+import type { WerdolPuzzle, WerdolRow } from "./puzzle"
 
 export function countCompleteSolutions(
-  puzzle: ForewordPuzzle,
+  puzzle: WerdolPuzzle,
   maxSolutions = 3,
   words: readonly string[] = ALLOWED_WORDS,
 ): number {
@@ -33,8 +33,8 @@ export function countCompleteSolutions(
 }
 
 function candidatesForRow(
-  puzzle: ForewordPuzzle,
-  row: ForewordRow,
+  puzzle: WerdolPuzzle,
+  row: WerdolRow,
   words: readonly string[],
 ): string[] {
   return words.filter((word) => {
@@ -67,8 +67,8 @@ function consume(word: string, remaining: Map<string, number>): void {
 }
 
 function patternsMatch(
-  actual: ForewordRow["pattern"],
-  expected: ForewordRow["pattern"],
+  actual: WerdolRow["pattern"],
+  expected: WerdolRow["pattern"],
 ): boolean {
   return actual.every((result, index) => result === expected[index])
 }

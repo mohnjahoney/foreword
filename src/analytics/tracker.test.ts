@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { TRACKER_ENDPOINT, trackForewordEvent } from "./tracker"
+import { TRACKER_ENDPOINT, trackWerdolEvent } from "./tracker"
 
-describe("foreword analytics tracker", () => {
+describe("werdol analytics tracker", () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it.each([
-    ["foreword:session_started", { platform: "web" }],
-    ["foreword:puzzle_started", { puzzleId: "puzzle-1", randomSeed: 123456 }],
-    ["foreword:move_executed", { puzzleId: "puzzle-1", moveNumber: 1, firstSlot: 0, secondSlot: 1 }],
-    ["foreword:puzzle_reset", { puzzleId: "puzzle-1", movesTaken: 3 }],
-    ["foreword:puzzle_ended", { puzzleId: "puzzle-1", outcome: "solved", movesTaken: 4 }],
+    ["werdol:session_started", { platform: "web" }],
+    ["werdol:puzzle_started", { puzzleId: "puzzle-1", randomSeed: 123456 }],
+    ["werdol:move_executed", { puzzleId: "puzzle-1", moveNumber: 1, firstSlot: 0, secondSlot: 1 }],
+    ["werdol:puzzle_reset", { puzzleId: "puzzle-1", movesTaken: 3 }],
+    ["werdol:puzzle_ended", { puzzleId: "puzzle-1", outcome: "solved", movesTaken: 4 }],
   ])("posts %s in the receiver protocol envelope", (event, details) => {
     const fetchMock = vi.fn(() => Promise.resolve(new Response()))
     vi.stubGlobal("fetch", fetchMock)
 
-    trackForewordEvent(event, details)
+    trackWerdolEvent(event, details)
 
     const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>
     expect(calls).toHaveLength(1)
@@ -28,8 +28,8 @@ describe("foreword analytics tracker", () => {
     const request = JSON.parse(String(calls[0]?.[1].body))
     expect(request).toEqual({ events: [expect.objectContaining({
       id: expect.any(String),
-      projectId: "foreword",
-      source: "foreword",
+      projectId: "werdol",
+      source: "werdol",
       type: event,
       time: expect.stringMatching(/^2026-/),
       payload: { sessionId: expect.any(String), ...details },

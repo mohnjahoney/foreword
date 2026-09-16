@@ -1,7 +1,7 @@
 import { countCompleteSolutions } from "./solver"
-import { createForewordPuzzle } from "./puzzle"
+import { createWerdolPuzzle } from "./puzzle"
 import { ALLOWED_WORDS } from "./words"
-import type { ForewordPuzzle } from "./puzzle"
+import type { WerdolPuzzle } from "./puzzle"
 import type { LetterResult } from "./evaluateGuess"
 
 export interface PuzzleAssessment {
@@ -14,7 +14,7 @@ export interface BoardTileCounts {
   yellow: number
 }
 
-export function countBoardTiles(puzzle: ForewordPuzzle): BoardTileCounts {
+export function countBoardTiles(puzzle: WerdolPuzzle): BoardTileCounts {
   return puzzle.rows.reduce(
     (counts, row) => {
       row.pattern.forEach((result: LetterResult) => {
@@ -28,7 +28,7 @@ export function countBoardTiles(puzzle: ForewordPuzzle): BoardTileCounts {
 }
 
 export function assessPuzzle(
-  puzzle: ForewordPuzzle,
+  puzzle: WerdolPuzzle,
   words: readonly string[] = ALLOWED_WORDS,
 ): PuzzleAssessment {
   const solutionCount = countCompleteSolutions(puzzle, 3, words)
@@ -38,9 +38,9 @@ export function assessPuzzle(
 export function createValidatedPuzzle(
   random = Math.random,
   maxAttempts = 20,
-): ForewordPuzzle {
+): WerdolPuzzle {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const puzzle = createForewordPuzzle(random)
+    const puzzle = createWerdolPuzzle(random)
     if (assessPuzzle(puzzle).acceptable) return puzzle
   }
   throw new Error(`Could not create an acceptable puzzle in ${maxAttempts} attempts`)

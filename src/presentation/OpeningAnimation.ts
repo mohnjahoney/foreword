@@ -1,22 +1,15 @@
 import Phaser from "phaser"
 import type { ScrambledBoard } from "../core/board"
 import type { LetterResult } from "../core/evaluateGuess"
-import { RENDER_SCALE } from "../style/rendering"
-import { BOARD_LAYOUT, boardSlotCenter } from "./board/boardLayout"
-import { markCorrectTile } from "./board/correctTileMarks"
-import { addForewordHeader } from "./ForewordHeader"
+import { boardSlotCenter } from "./board/boardLayout"
+import { stopCorrectTileMarkAnimation } from "./board/correctTileMarks"
+import { applyTileEvaluation, createTileAsterisk, createTileBackground, createTileLetter, SPLASH_PRESENTATION, type BoardPresentation } from "./board/tileVisuals"
+import { addWerdolHeader } from "./WerdolHeader"
 
 const COLORS = {
   paper: 0xf3eedf,
-  ink: "#211f1a",
-  muted: "#756d5e",
-  empty: 0xe9e2d3,
-  absent: 0xaaa396,
-  present: 0xc49f52,
-  correct: 0x71845f,
 } as const
 
-const CELL_SIZE = BOARD_LAYOUT.tileSize
 const SPLASH_SPEED = 2
 const splashTime = (milliseconds: number): number => milliseconds / SPLASH_SPEED
 const ENTRY_INTERVAL = splashTime(112)
@@ -29,21 +22,34 @@ interface OpeningTile {
   background: Phaser.GameObjects.Rectangle
   unknown: Phaser.GameObjects.Text
   letter: Phaser.GameObjects.Text
+  evaluation?: LetterResult
 }
 
-/** The anonymized Wordle prelude shown before the real Foreword board. */
+export interface OpeningAnimationOptions {
+  showAsterisk?: boolean
+  showMarkup?: boolean
+}
+
+/** The anonymized Wordle prelude shown before the real Werdol board. */
 export class OpeningAnimation {
   private readonly layer: Phaser.GameObjects.Container
   private readonly letterLayer: Phaser.GameObjects.Container
   private readonly tiles: OpeningTile[] = []
   private readonly timers: Phaser.Time.TimerEvent[] = []
+  private readonly presentation: BoardPresentation
   private finished = false
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly scrambledBoard: ScrambledBoard,
     private readonly onComplete: () => void,
+    private readonly options: OpeningAnimationOptions = {},
   ) {
+    this.presentation = {
+      ...SPLASH_PRESENTATION,
+      showAsterisks: this.options.showAsterisk !== false,
+      showEvaluation: this.options.showMarkup !== false,
+    }
     this.layer = scene.add.container(0, 0).setDepth(10_000)
     this.letterLayer = scene.add.container(0, 0).setDepth(100)
     this.layer.add(scene.add.rectangle(215, 380, 430, 760, COLORS.paper).setInteractive())
@@ -56,11 +62,12 @@ export class OpeningAnimation {
 
   destroy(): void {
     this.timers.forEach((timer) => timer.remove(false))
+    this.tiles.forEach((tile) => stopCorrectTileMarkAnimation(tile.background))
     this.layer.destroy(true)
   }
 
   private addHeader(): void {
-    addForewordHeader(this.scene, this.layer)
+    addWerdolHeader(this.scene, this.layer)
   }
 
   private buildBoard(): void {
@@ -70,22 +77,9 @@ export class OpeningAnimation {
       for (let column = 0; column < 5; column += 1) {
         const { x, y } = boardSlotCenter(row, column)
         const container = this.scene.add.container(x, y)
-        const background = this.scene.add.rectangle(0, 0, CELL_SIZE, CELL_SIZE, COLORS.empty)
-          .setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, 0xc6bdae)
-        const unknown = this.scene.add.text(x, y, "*", {
-          color: COLORS.ink,
-          fontFamily: "Arial, sans-serif",
-          fontSize: "28px",
-          fontStyle: "bold",
-          resolution: RENDER_SCALE,
-        }).setOrigin(0.5).setDepth(10).setAlpha(0)
-        const letter = this.scene.add.text(x, y, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
-          color: "#fffdf7",
-          fontFamily: "Arial, sans-serif",
-          fontSize: `${BOARD_LAYOUT.letterFontSize}px`,
-          fontStyle: "bold",
-          resolution: RENDER_SCALE,
-        }).setOrigin(0.5).setDepth(10).setAlpha(0)
+        const background = createTileBackground(this.scene, { x: 0, y: 0 }, undefined, this.presentation)
+        const unknown = createTileAsterisk(this.scene, { x, y }, this.presentation).setAlpha(0)
+        const letter = createTileLetter(this.scene, { x, y }, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", this.presentation).setAlpha(0)
         container.add(background)
         this.letterLayer.add([unknown, letter])
         this.layer.add(container)
@@ -102,7 +96,8 @@ export class OpeningAnimation {
         this.after(start + column * ENTRY_INTERVAL, () => {
           const tile = this.tiles[rowIndex * 5 + column]
           if (!tile) return
-          this.scene.tweens.add({ targets: tile.unknown, alpha: 1, duration: splashTime(70), ease: "Sine.Out" })
+          this.scene.tweens.add({ targets: tile.unknown, alpha: this.options.showAsterisk === false ? 0 : 1, duration: splashTime(70), ease: "Sine.Out" })
+          if (!this.presentation.showAsterisks) tile.letter.setAlpha(1)
           this.scene.tweens.add({ targets: [tile.container, tile.unknown, tile.letter], scale: 1.08, duration: splashTime(90), yoyo: true, ease: "Sine.Out" })
         })
       }
@@ -128,9 +123,9 @@ export class OpeningAnimation {
       duration: FLIP_DURATION,
       ease: "Sine.In",
       onComplete: () => {
-        tile.background.setFillStyle(COLORS[result]).setStrokeStyle(1.5, COLORS[result])
-        markCorrectTile(tile.background, result === "correct")
-        this.scene.tweens.add({ targets: tile.container, scaleY: 1, duration: FLIP_DURATION, ease: "Back.Out" })
+        tile.evaluation = result
+        this.applyEvaluation(tile, result)
+        this.scene.tweens.add({ targets: [tile.container, tile.unknown, tile.letter], scaleY: 1, duration: FLIP_DURATION, ease: "Back.Out" })
       },
     })
   }
@@ -138,12 +133,7 @@ export class OpeningAnimation {
   private crossfadeLetter(index: number): void {
     const tile = this.tiles[index]
     if (!tile) return
-    const destinationIndex = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
-    const destinationRow = Math.floor(destinationIndex / 5)
-    const destinationColumn = destinationIndex % 5
     this.scene.tweens.add({ targets: tile.unknown, alpha: 0, duration: splashTime(300), ease: "Sine.InOut" })
-    const destinationGuess = this.scrambledBoard.rows[destinationRow]?.intendedGuess
-    markCorrectTile(this.tiles[destinationIndex]?.background, tile.letter.text === destinationGuess?.[destinationColumn])
     this.scene.tweens.add({ targets: tile.letter, alpha: 1, duration: splashTime(300), ease: "Sine.InOut" })
   }
 
@@ -152,6 +142,10 @@ export class OpeningAnimation {
     if (!tile) return
     tile.unknown.setAlpha(0)
     tile.letter.setAlpha(1)
+  }
+
+  private applyEvaluation(tile: OpeningTile, result: LetterResult): void {
+    applyTileEvaluation(this.scene, tile.background, result, this.presentation, true)
   }
 
   private shuffleUnknown(): void {

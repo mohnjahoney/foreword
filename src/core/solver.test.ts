@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { countCompleteSolutions } from "./solver"
-import { type ForewordPuzzle } from "./puzzle"
+import { type WerdolPuzzle } from "./puzzle"
 
 describe("countCompleteSolutions", () => {
   it("finds the intended board solution", () => {
-    const puzzle: ForewordPuzzle = {
+    const puzzle: WerdolPuzzle = {
       target: "CRANE",
       rows: [
         { intendedGuess: "SLATE", pattern: ["absent", "absent", "correct", "absent", "correct"] },
@@ -18,7 +18,7 @@ describe("countCompleteSolutions", () => {
   })
 
   it("stops counting once the requested limit is reached", () => {
-    const puzzle: ForewordPuzzle = {
+    const puzzle: WerdolPuzzle = {
       target: "CRANE",
       rows: [
         { intendedGuess: "CRANE", pattern: ["correct", "correct", "correct", "correct", "correct"] },

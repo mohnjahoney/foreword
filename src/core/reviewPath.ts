@@ -1,6 +1,6 @@
 import type { LetterTile } from "./board"
 import { TILES_PER_ROW } from "./board"
-import type { ForewordPuzzle } from "./puzzle"
+import type { WerdolPuzzle } from "./puzzle"
 import { findNextSwap } from "./minimumMoves"
 
 export interface ReviewState {
@@ -10,7 +10,7 @@ export interface ReviewState {
   swap?: { firstSlot: number; secondSlot: number }
 }
 
-export function countCorrectTiles(puzzle: ForewordPuzzle, tiles: readonly LetterTile[]): number {
+export function countCorrectTiles(puzzle: WerdolPuzzle, tiles: readonly LetterTile[]): number {
   return tiles.reduce((count, tile, slotIndex) => {
     const row = puzzle.rows[Math.floor(slotIndex / TILES_PER_ROW)]
     const column = slotIndex % TILES_PER_ROW
@@ -28,7 +28,7 @@ export function swapTileState(tiles: readonly LetterTile[], firstSlot: number, s
   return next
 }
 
-export function createReferencePath(puzzle: ForewordPuzzle, startingTiles: readonly LetterTile[]): ReviewState[] {
+export function createReferencePath(puzzle: WerdolPuzzle, startingTiles: readonly LetterTile[]): ReviewState[] {
   const states: ReviewState[] = [{ tiles: startingTiles.map((tile) => ({ ...tile })), deltaCorrect: 0, correctCount: countCorrectTiles(puzzle, startingTiles) }]
   let tiles = states[0]!.tiles
   const maxMoves = puzzle.rows.length * TILES_PER_ROW

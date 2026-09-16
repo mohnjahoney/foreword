@@ -1,6 +1,6 @@
-# Foreword
+# Werdol
 
-Foreword is a tactile word-path puzzle built from four Wordle-evaluated rows
+Werdol is a tactile word-path puzzle built from four Wordle-evaluated rows
 and one shared pool of shuffled letters.
 
 ## Development
@@ -20,4 +20,4 @@ npm run build
 
 The repository includes a GitHub Actions workflow for deploying the Vite
 build to GitHub Pages. Its Vite base path is configured for the repository
-name `foreword`.
+name `werdol`.

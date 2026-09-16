@@ -11,8 +11,8 @@ const analytics: HeadlessAnalyticsSink = {
   track(type: string, payload: Record<string, JsonValue>) {
     const envelope = createEventEnvelope({
       id: crypto.randomUUID(),
-      projectId: "foreword",
-      source: "foreword",
+      projectId: "werdol",
+      source: "werdol",
       type,
       time: new Date().toISOString(),
       payload,

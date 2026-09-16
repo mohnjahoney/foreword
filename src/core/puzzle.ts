@@ -3,14 +3,14 @@ import { ALLOWED_WORDS, ANSWER_WORDS } from "./words"
 
 export const ROW_COUNT = 4
 
-export interface ForewordRow {
+export interface WerdolRow {
   intendedGuess: string
   pattern: LetterResult[]
 }
 
-export interface ForewordPuzzle {
+export interface WerdolPuzzle {
   target: string
-  rows: ForewordRow[]
+  rows: WerdolRow[]
   wordsConsidered?: number
 }
 
@@ -24,7 +24,7 @@ export interface PuzzleSetup {
   wordListMode?: "easy" | "hard"
 }
 
-export function createForewordPuzzle(random = Math.random, setup: PuzzleSetup = {}): ForewordPuzzle {
+export function createWerdolPuzzle(random = Math.random, setup: PuzzleSetup = {}): WerdolPuzzle {
   const useSmallList = setup.wordListMode === "easy" || (setup.wordListMode === undefined && setup.useAnswerWordsForRows === true)
   const wordList = setup.wordListMode === "hard" ? ALLOWED_WORDS : ANSWER_WORDS
   const guessWords = useSmallList ? ANSWER_WORDS : ALLOWED_WORDS

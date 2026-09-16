@@ -1,8 +1,8 @@
 import Phaser from "phaser"
 import { RENDER_SCALE } from "../style/rendering"
 
-export function addForewordHeader(scene: Phaser.Scene, parent?: Phaser.GameObjects.Container): void {
-  const title = scene.add.text(215, 67, "FOREWORD", {
+export function addWerdolHeader(scene: Phaser.Scene, parent?: Phaser.GameObjects.Container): void {
+  const title = scene.add.text(215, 67, "WERDOL", {
     color: "#211f1a",
     fontFamily: "Georgia, Times New Roman, serif",
     fontSize: "31px",

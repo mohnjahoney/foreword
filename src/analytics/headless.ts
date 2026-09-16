@@ -1,6 +1,6 @@
 import { createScrambledBoard, type LetterTile } from "../core/board"
 import { countCorrectTiles, swapTileState } from "../core/reviewPath"
-import { createForewordPuzzle, type ForewordPuzzle, type PuzzleSetup } from "../core/puzzle"
+import { createWerdolPuzzle, type WerdolPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { createSeededRandom, normalizeSeed } from "../core/seededRandom"
 import type { JsonValue } from "./protocol"
 
@@ -29,7 +29,7 @@ export function createHeadlessGame(options: HeadlessGameOptions) {
   const randomSeed = normalizeSeed(options.randomSeed)
   const sessionId = options.sessionId ?? createId()
   const puzzleId = options.puzzleId ?? createId()
-  const puzzle = createForewordPuzzle(createSeededRandom(randomSeed, 1), options.setup)
+  const puzzle = createWerdolPuzzle(createSeededRandom(randomSeed, 1), options.setup)
   const initialTiles = createScrambledBoard(puzzle, createSeededRandom(randomSeed, 2)).tiles.slice(0, puzzle.rows.length * 5)
   let tiles = initialTiles.map((tile) => ({ ...tile }))
   let selectedSlot: number | undefined
@@ -40,7 +40,7 @@ export function createHeadlessGame(options: HeadlessGameOptions) {
     options.analytics?.track(type, { sessionId, puzzleId, randomSeed, ...payload })
   }
 
-  track("foreword:puzzle_started", { puzzleNumber: 1, wordListMode: options.setup?.wordListMode ?? "easy", targetWord: puzzle.target })
+  track("werdol:puzzle_started", { puzzleNumber: 1, wordListMode: options.setup?.wordListMode ?? "easy", targetWord: puzzle.target })
 
   const getState = (): HeadlessGameState => ({
     puzzleId,
@@ -66,11 +66,11 @@ export function createHeadlessGame(options: HeadlessGameOptions) {
     tiles = swapTileState(tiles, firstSlot, slotIndex)
     selectedSlot = undefined
     movesTaken += 1
-    track("foreword:move_executed", { moveNumber: movesTaken, firstSlot, secondSlot: slotIndex })
+    track("werdol:move_executed", { moveNumber: movesTaken, firstSlot, secondSlot: slotIndex })
 
     if (!ended && countCorrectTiles(puzzle, tiles) === tiles.length) {
       ended = true
-      track("foreword:puzzle_ended", { outcome: "solved", movesTaken })
+      track("werdol:puzzle_ended", { outcome: "solved", movesTaken })
     }
   }
 
@@ -79,10 +79,10 @@ export function createHeadlessGame(options: HeadlessGameOptions) {
     selectedSlot = undefined
     movesTaken = 0
     ended = false
-    track("foreword:puzzle_reset", { movesTaken: 0 })
+    track("werdol:puzzle_reset", { movesTaken: 0 })
   }
 
-  return { getState, selectTile, reset, puzzle: puzzle as ForewordPuzzle, sessionId }
+  return { getState, selectTile, reset, puzzle: puzzle as WerdolPuzzle, sessionId }
 }
 
 function createId(): string {

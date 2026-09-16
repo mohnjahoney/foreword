@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { assessPuzzle, countBoardTiles } from "./validation"
-import { type ForewordPuzzle } from "./puzzle"
+import { type WerdolPuzzle } from "./puzzle"
 
 describe("assessPuzzle", () => {
   it("accepts a puzzle with one complete solution", () => {
-    const puzzle: ForewordPuzzle = {
+    const puzzle: WerdolPuzzle = {
       target: "CRANE",
       rows: [
         { intendedGuess: "SLATE", pattern: ["absent", "absent", "correct", "absent", "correct"] },
@@ -23,7 +23,7 @@ describe("assessPuzzle", () => {
 
 describe("countBoardTiles", () => {
   it("counts green and yellow tiles across the whole board", () => {
-    const puzzle: ForewordPuzzle = {
+    const puzzle: WerdolPuzzle = {
       target: "CRANE",
       rows: [
         { intendedGuess: "SLATE", pattern: ["absent", "present", "correct", "absent", "correct"] },

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { createReferencePath } from "./reviewPath"
 import type { LetterTile } from "./board"
-import type { ForewordPuzzle } from "./puzzle"
+import type { WerdolPuzzle } from "./puzzle"
 
-const puzzle: ForewordPuzzle = {
+const puzzle: WerdolPuzzle = {
   target: "CRANE",
   rows: [{ intendedGuess: "SLATE", pattern: ["absent", "absent", "correct", "absent", "correct"] }],
 }

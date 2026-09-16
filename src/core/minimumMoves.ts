@@ -1,6 +1,6 @@
 import type { LetterTile } from "./board"
 import { TILES_PER_ROW } from "./board"
-import type { ForewordPuzzle } from "./puzzle"
+import type { WerdolPuzzle } from "./puzzle"
 
 export interface ProposedSwap {
   firstSlot: number
@@ -8,7 +8,7 @@ export interface ProposedSwap {
   improvement: 1 | 2
 }
 
-export function findNextSwap(puzzle: ForewordPuzzle, tiles: readonly LetterTile[]): ProposedSwap | undefined {
+export function findNextSwap(puzzle: WerdolPuzzle, tiles: readonly LetterTile[]): ProposedSwap | undefined {
   const totalSlots = puzzle.rows.length * TILES_PER_ROW
   const correct = (slotIndex: number): boolean => {
     const tile = tiles[slotIndex]
@@ -52,7 +52,7 @@ export function findNextSwap(puzzle: ForewordPuzzle, tiles: readonly LetterTile[
   return { firstSlot, secondSlot, improvement: 1 }
 }
 
-export function countAlgorithmicMoves(puzzle: ForewordPuzzle, startingTiles: readonly LetterTile[]): number {
+export function countAlgorithmicMoves(puzzle: WerdolPuzzle, startingTiles: readonly LetterTile[]): number {
   const tiles = startingTiles.map((tile) => ({ ...tile }))
   let moves = 0
   while (true) {

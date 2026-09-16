@@ -13,6 +13,11 @@ export const BOARD_LAYOUT = {
 export const ROW_COMPLETION_MARK_RADIUS = 4
 export const ROW_COMPLETION_MARK_GAP = BOARD_LAYOUT.completionMarkGap
 
+export interface BoardPoint {
+  x: number
+  y: number
+}
+
 export function boardRowCenter(rowIndex: number): number {
   return BOARD_LAYOUT.top + rowIndex * BOARD_LAYOUT.rowStep + BOARD_LAYOUT.tileSize / 2
 }

@@ -1,4 +1,4 @@
-import { ROW_COUNT, type ForewordPuzzle, type ForewordRow } from "./puzzle"
+import { ROW_COUNT, type WerdolPuzzle, type WerdolRow } from "./puzzle"
 
 export const TILES_PER_ROW = 5
 
@@ -25,7 +25,7 @@ export interface LetterTile {
 }
 
 export interface ScrambledBoard {
-  rows: ForewordRow[]
+  rows: WerdolRow[]
   letters: Letter[]
   boardTiles: Tile[]
   initialOccupancy: number[]
@@ -36,11 +36,11 @@ export interface ScrambledBoard {
 }
 
 export function createScrambledBoard(
-  puzzle: ForewordPuzzle,
+  puzzle: WerdolPuzzle,
   random = Math.random,
 ): ScrambledBoard {
   if (puzzle.rows.length !== ROW_COUNT) {
-    throw new Error(`Foreword boards must contain exactly ${ROW_COUNT} rows`)
+    throw new Error(`Werdol boards must contain exactly ${ROW_COUNT} rows`)
   }
 
   const letters = puzzle.rows.flatMap((row, sourceRow) =>
@@ -60,7 +60,7 @@ export function createScrambledBoard(
   }))
   const allLetters = [...letters, ...targetLetters]
 
-  const boardRows: ForewordRow[] = [
+  const boardRows: WerdolRow[] = [
     ...puzzle.rows,
     { intendedGuess: puzzle.target, pattern: Array(5).fill("correct") },
   ]

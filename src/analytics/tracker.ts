@@ -11,7 +11,7 @@ let puzzleNumber = 0
 export function trackSessionStarted(): void {
   if (sessionStarted) return
   sessionStarted = true
-  trackForewordEvent("foreword:session_started", { platform: "web" })
+  trackWerdolEvent("werdol:session_started", { platform: "web" })
 }
 
 export function startPuzzleAnalytics(): { puzzleId: string; puzzleNumber: number } {
@@ -19,10 +19,10 @@ export function startPuzzleAnalytics(): { puzzleId: string; puzzleNumber: number
   return { puzzleId: createAnalyticsId(), puzzleNumber }
 }
 
-export function trackForewordEvent(event: string, details: AnalyticsDetails = {}): void {
+export function trackWerdolEvent(event: string, details: AnalyticsDetails = {}): void {
   const envelope = createEventEnvelope({
-    projectId: "foreword",
-    source: "foreword",
+    projectId: "werdol",
+    source: "werdol",
     id: createAnalyticsId(),
     type: event,
     time: new Date().toISOString(),
