@@ -247,8 +247,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildNewPuzzleButton(): void {
-    const button = this.add.rectangle(105, 708, 220, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(215, 727, `NEW PUZZLE  ·  ${this.puzzle.wordsConsidered ?? 0}`, { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const button = this.add.rectangle(31, 625, 368, 42, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(215, 646, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerdown", () => this.restartWithSetup({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
@@ -263,11 +263,17 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
-    this.add.rectangle(285, 545, 115, 85, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
-    this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
-    this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
-    this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
-    this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
+    const cardY = 540
+    const cardWidth = 175
+    const cardHeight = 58
+    const leftCardX = 31
+    const rightCardX = 224
+    this.add.rectangle(leftCardX, cardY, cardWidth, cardHeight, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+    this.add.rectangle(rightCardX, cardY, cardWidth, cardHeight, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+    this.add.text(leftCardX + cardWidth / 2, cardY + 16, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.add.text(rightCardX + cardWidth / 2, cardY + 16, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.movesTakenText = this.add.text(leftCardX + cardWidth / 2, cardY + 40, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "17px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.minimumMovesText = this.add.text(rightCardX + cardWidth / 2, cardY + 40, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "17px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     this.updateMoveInfo()
   }
 
