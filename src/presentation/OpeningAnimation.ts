@@ -34,6 +34,7 @@ interface OpeningTile {
 /** The anonymized Wordle prelude shown before the real Foreword board. */
 export class OpeningAnimation {
   private readonly layer: Phaser.GameObjects.Container
+  private readonly letterLayer: Phaser.GameObjects.Container
   private readonly tiles: OpeningTile[] = []
   private readonly timers: Phaser.Time.TimerEvent[] = []
   private finished = false
@@ -44,9 +45,11 @@ export class OpeningAnimation {
     private readonly onComplete: () => void,
   ) {
     this.layer = scene.add.container(0, 0).setDepth(10_000)
+    this.letterLayer = scene.add.container(0, 0).setDepth(1)
     this.layer.add(scene.add.rectangle(215, 380, 430, 760, COLORS.paper).setInteractive())
     this.addHeader()
     this.buildBoard()
+    this.layer.add(this.letterLayer)
     this.scheduleAnimation()
   }
 
@@ -68,21 +71,22 @@ export class OpeningAnimation {
         const container = this.scene.add.container(x, y)
         const background = this.scene.add.rectangle(0, 0, CELL_SIZE, CELL_SIZE, COLORS.empty)
           .setStrokeStyle(BOARD_LAYOUT.tileBorderWidth, 0xc6bdae)
-        const unknown = this.scene.add.text(0, 0, "*", {
+        const unknown = this.scene.add.text(x, y, "*", {
           color: COLORS.ink,
           fontFamily: "Arial, sans-serif",
           fontSize: "28px",
           fontStyle: "bold",
           resolution: RENDER_SCALE,
         }).setOrigin(0.5).setAlpha(0)
-        const letter = this.scene.add.text(0, 0, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
+        const letter = this.scene.add.text(x, y, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
           color: "#fffdf7",
           fontFamily: "Arial, sans-serif",
           fontSize: `${BOARD_LAYOUT.letterFontSize}px`,
           fontStyle: "bold",
           resolution: RENDER_SCALE,
         }).setOrigin(0.5).setAlpha(0)
-        container.add([background, unknown, letter])
+        container.add(background)
+        this.letterLayer.add([unknown, letter])
         this.layer.add(container)
         this.tiles.push({ container, background, unknown, letter })
       }
@@ -98,7 +102,7 @@ export class OpeningAnimation {
           const tile = this.tiles[rowIndex * 5 + column]
           if (!tile) return
           this.scene.tweens.add({ targets: tile.unknown, alpha: 1, duration: splashTime(70), ease: "Sine.Out" })
-          this.scene.tweens.add({ targets: tile.container, scale: 1.08, duration: splashTime(90), yoyo: true, ease: "Sine.Out" })
+          this.scene.tweens.add({ targets: [tile.container, tile.unknown, tile.letter], scale: 1.08, duration: splashTime(90), yoyo: true, ease: "Sine.Out" })
         })
       }
       const submitAt = start + 5 * ENTRY_INTERVAL + splashTime(180)
@@ -118,7 +122,7 @@ export class OpeningAnimation {
     const tile = this.tiles[index]
     if (!tile) return
     this.scene.tweens.add({
-      targets: tile.container,
+      targets: [tile.container, tile.unknown, tile.letter],
       scaleY: 0.04,
       duration: FLIP_DURATION,
       ease: "Sine.In",
@@ -151,19 +155,14 @@ export class OpeningAnimation {
 
   private shuffleUnknown(): void {
     this.tiles.slice(0, 20).forEach((tile, index) => {
-      const row = Math.floor(index / 5)
-      const column = index % 5
       const destinationIndex = this.scrambledBoard.tiles.findIndex((candidate) => candidate.id === index)
       const destinationRow = Math.floor(destinationIndex / 5)
       const destinationColumn = destinationIndex % 5
       const destination = boardSlotCenter(destinationRow, destinationColumn)
-      const source = boardSlotCenter(row, column)
-      const offsetX = destination.x - source.x
-      const offsetY = destination.y - source.y
       this.scene.tweens.add({
         targets: [tile.unknown, tile.letter],
-        x: offsetX,
-        y: offsetY,
+        x: destination.x,
+        y: destination.y,
         duration: SHUFFLE_DURATION,
         delay: (index % 5) * splashTime(18),
         ease: "Cubic.InOut",
