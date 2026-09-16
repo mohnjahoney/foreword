@@ -24,7 +24,6 @@ const SWAP_ANIMATION_DURATION = 480
 
 interface TileVisual {
   tile: LetterTile
-  background: Phaser.GameObjects.Rectangle
   text: Phaser.GameObjects.Text
 }
 
@@ -206,7 +205,6 @@ export class MainScene extends Phaser.Scene {
       wordsConsidered: this.puzzle.wordsConsidered ?? 0,
     })
     this.buildMoveInfo()
-    this.buildInteractionTools()
     this.buildNewPuzzleButton()
     if (import.meta.env.DEV) {
       this.buildDevPanel()
@@ -265,20 +263,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
-    this.add.rectangle(285, 535, 115, 150, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
-    const nextButton = this.add.rectangle(295, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.image(317, 562, "foreword-arrow-right").setDisplaySize(25, 25).setDepth(1)
-    nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
-    const resetButton = this.add.rectangle(345, 545, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    createIconLabel(this, 367, 562, "reset")
-    resetButton.on("pointerdown", () => this.resetPuzzle())
+    this.add.rectangle(285, 545, 115, 85, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
     this.add.text(295, 605, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
     this.add.text(295, 630, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0, 0.5)
     this.movesTakenText = this.add.text(390, 605, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
     this.minimumMovesText = this.add.text(390, 630, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5)
-    const reviewButton = this.add.rectangle(295, 650, 95, 28, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(342, 664, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
-    reviewButton.on("pointerdown", () => this.enterReviewMode())
     this.updateMoveInfo()
   }
 
@@ -288,9 +277,9 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildInteractionTools(): void {
-    const normalX = 31
-    const revealX = 112
-    const y = 545
+    const normalX = 20
+    const revealX = 101
+    const y = 300
     this.normalModeButton = this.add.rectangle(normalX, y, 72, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.revealModeButton = this.add.rectangle(revealX, y, 72, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.normalModeLabel = createIconLabel(this, normalX + 36, y + 19, "swap")
@@ -298,6 +287,20 @@ export class MainScene extends Phaser.Scene {
     this.normalModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.revealModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.setInteractionMode("swap", false)
+  }
+
+  private buildDeveloperMoveControls(): void {
+    const y = 300
+    const nextButton = this.add.rectangle(220, y, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const nextIcon = this.add.image(242, y + 17, "foreword-arrow-right").setDisplaySize(25, 25).setDepth(1)
+    nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
+    const resetButton = this.add.rectangle(270, y, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const resetLabel = createIconLabel(this, 292, y + 17, "reset")
+    resetButton.on("pointerdown", () => this.resetPuzzle())
+    const reviewButton = this.add.rectangle(220, y + 45, 95, 28, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const reviewLabel = this.add.text(267, y + 59, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    reviewButton.on("pointerdown", () => this.enterReviewMode())
+    this.devPanel.add([nextButton, nextIcon, resetButton, resetLabel, reviewButton, reviewLabel])
   }
 
   private performNextAlgorithmicSwap(): void {
@@ -419,6 +422,8 @@ export class MainScene extends Phaser.Scene {
     this.devPanel = this.add.container(25, 95).setDepth(50)
     const panel = this.add.rectangle(0, 0, 380, 550, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     this.devPanel.add(panel)
+    this.buildInteractionTools()
+    this.buildDeveloperMoveControls()
     const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
@@ -590,7 +595,7 @@ export class MainScene extends Phaser.Scene {
         const tile = rowTiles[index]
         if (tile === undefined) return
         const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffdf7", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
-        if (!isFrozen) this.tileSlots.push({ tile, background, text })
+        if (!isFrozen) this.tileSlots.push({ tile, text })
       })
     })
     const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
@@ -702,7 +707,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   private playCompletionCelebration(completedRows: number[], puzzleComplete: boolean): void {
-    const groups = this.tileSlots.map((visual) => [visual.background, visual.text])
+    const groups: Phaser.GameObjects.GameObject[][] = this.tileSlots.map((visual, slotIndex) => {
+      const background = this.tileBackgrounds[slotIndex]
+      return background === undefined ? [visual.text] : [background, visual.text]
+    })
     const rows = Array.from({ length: this.puzzle.rows.length }, (_value, rowIndex) => groups.slice(rowIndex * 5, (rowIndex + 1) * 5))
     if (puzzleComplete) {
       celebrateCompletedPuzzle(this, rows)
