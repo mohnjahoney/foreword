@@ -12,7 +12,7 @@ import { createSeededRandom, nextPuzzleSeed, normalizeSeed, seedFromCurrentTime 
 import { configureLogicalCamera, RENDER_SCALE } from "../style/rendering"
 import { startPuzzleAnalytics, trackForewordEvent, trackSessionStarted } from "../analytics/tracker"
 import { OpeningAnimation } from "../presentation/OpeningAnimation"
-import { BOARD_LAYOUT, boardSlotCenter } from "../presentation/board/boardLayout"
+import { BOARD_LAYOUT, boardSlotCenter, boardTileSpan } from "../presentation/board/boardLayout"
 import { markCorrectTile } from "../presentation/board/correctTileMarks"
 import { celebrateCompletedPuzzle, celebrateCompletedRow } from "../presentation/celebrations"
 import { addForewordHeader } from "../presentation/ForewordHeader"
@@ -247,8 +247,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildNewPuzzleButton(): void {
-    const button = this.add.rectangle(31, 625, 368, 42, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(215, 646, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "12px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const button = this.add.rectangle(105, 602, 220, 36, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.add.text(215, 620, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerdown", () => this.restartWithSetup({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
@@ -263,17 +263,14 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildMoveInfo(): void {
-    const cardY = 540
-    const cardWidth = 175
-    const cardHeight = 58
-    const leftCardX = 31
-    const rightCardX = 224
-    this.add.rectangle(leftCardX, cardY, cardWidth, cardHeight, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
-    this.add.rectangle(rightCardX, cardY, cardWidth, cardHeight, 0xe7e0d0).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
-    this.add.text(leftCardX + cardWidth / 2, cardY + 16, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.add.text(rightCardX + cardWidth / 2, cardY + 16, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.movesTakenText = this.add.text(leftCardX + cardWidth / 2, cardY + 40, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "17px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.minimumMovesText = this.add.text(rightCardX + cardWidth / 2, cardY + 40, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "17px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const statsLeft = BOARD_LAYOUT.anchorX - boardTileSpan() / 2
+    const statsWidth = boardTileSpan()
+    const statsY = 535
+    this.add.rectangle(statsLeft, statsY, statsWidth, 1, MainScene.BUTTON_STROKE_COLOR).setOrigin(0, 0.5)
+    this.add.text(statsLeft + statsWidth * 0.35, statsY + 18, "MOVES", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.add.text(statsLeft + statsWidth * 0.65, statsY + 18, "MINIMUM", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.movesTakenText = this.add.text(statsLeft + statsWidth * 0.35, statsY + 39, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.minimumMovesText = this.add.text(statsLeft + statsWidth * 0.65, statsY + 39, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     this.updateMoveInfo()
   }
 
