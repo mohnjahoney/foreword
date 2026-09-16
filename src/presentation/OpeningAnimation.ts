@@ -45,11 +45,12 @@ export class OpeningAnimation {
     private readonly onComplete: () => void,
   ) {
     this.layer = scene.add.container(0, 0).setDepth(10_000)
-    this.letterLayer = scene.add.container(0, 0).setDepth(1)
+    this.letterLayer = scene.add.container(0, 0).setDepth(100)
     this.layer.add(scene.add.rectangle(215, 380, 430, 760, COLORS.paper).setInteractive())
     this.addHeader()
     this.buildBoard()
     this.layer.add(this.letterLayer)
+    this.layer.bringToTop(this.letterLayer)
     this.scheduleAnimation()
   }
 
@@ -77,14 +78,14 @@ export class OpeningAnimation {
           fontSize: "28px",
           fontStyle: "bold",
           resolution: RENDER_SCALE,
-        }).setOrigin(0.5).setAlpha(0)
+        }).setOrigin(0.5).setDepth(10).setAlpha(0)
         const letter = this.scene.add.text(x, y, rowTiles[column]?.letter ?? intendedGuess[column] ?? "", {
           color: "#fffdf7",
           fontFamily: "Arial, sans-serif",
           fontSize: `${BOARD_LAYOUT.letterFontSize}px`,
           fontStyle: "bold",
           resolution: RENDER_SCALE,
-        }).setOrigin(0.5).setAlpha(0)
+        }).setOrigin(0.5).setDepth(10).setAlpha(0)
         container.add(background)
         this.letterLayer.add([unknown, letter])
         this.layer.add(container)
