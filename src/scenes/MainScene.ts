@@ -14,6 +14,7 @@ import { startPuzzleAnalytics, trackForewordEvent, trackSessionStarted } from ".
 import { OpeningAnimation } from "../presentation/OpeningAnimation"
 import { BOARD_LAYOUT, boardSlotCenter } from "../presentation/board/boardLayout"
 import { markCorrectTile } from "../presentation/board/correctTileMarks"
+import { celebrateCompletedPuzzle, celebrateCompletedRow } from "../presentation/celebrations"
 import { addForewordHeader } from "../presentation/ForewordHeader"
 
 const COLORS = { ink: "#211f1a", muted: "#756d5e", absent: 0xaaa396, present: 0xc49f52, correct: 0x71845f, selected: 0x665d4f, tile: 0xc6bdae, reviewHover: 0xe5a5bc } as const
@@ -23,6 +24,7 @@ const SWAP_ANIMATION_DURATION = 480
 
 interface TileVisual {
   tile: LetterTile
+  background: Phaser.GameObjects.Rectangle
   text: Phaser.GameObjects.Text
 }
 
@@ -588,7 +590,7 @@ export class MainScene extends Phaser.Scene {
         const tile = rowTiles[index]
         if (tile === undefined) return
         const text = this.add.text(center.x, center.y, tile.letter, { color: "#fffdf7", fontFamily: "Arial, sans-serif", fontSize: `${BOARD_LAYOUT.letterFontSize}px`, fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(10)
-        if (!isFrozen) this.tileSlots.push({ tile, text })
+        if (!isFrozen) this.tileSlots.push({ tile, background, text })
       })
     })
     const initialTiles = this.tileSlots.map((visual) => ({ ...visual.tile }))
@@ -659,6 +661,7 @@ export class MainScene extends Phaser.Scene {
     const second = this.tileSlots[secondSlot]
     if (first === undefined || second === undefined) return
     const currentTiles = this.tileSlots.map((visual) => visual.tile)
+    const previouslyCorrect = this.puzzle.rows.map((_row, rowIndex) => this.isRowCorrect(rowIndex))
     const nextTiles = swapTileState(currentTiles, firstSlot, secondSlot)
     const currentCorrect = countCorrectTiles(this.puzzle, currentTiles)
     const nextCorrect = countCorrectTiles(this.puzzle, nextTiles)
@@ -677,8 +680,12 @@ export class MainScene extends Phaser.Scene {
     this.updateMoveInfo()
     this.animateExchange(first, second, firstSlot, secondSlot)
     this.updateRowFeedback()
+    const newlyCompletedRows = this.puzzle.rows
+      .map((_row, rowIndex) => rowIndex)
+      .filter((rowIndex) => !previouslyCorrect[rowIndex] && this.isRowCorrect(rowIndex))
     if (!this.puzzleEndedTracked && this.puzzle.rows.every((_row, rowIndex) => this.isRowCorrect(rowIndex))) {
       this.puzzleEndedTracked = true
+      this.time.delayedCall(SWAP_ANIMATION_DURATION, () => this.playCompletionCelebration(newlyCompletedRows, true))
       trackForewordEvent("foreword:puzzle_ended", {
         puzzleId: this.puzzleId,
         puzzleNumber: this.puzzleNumber,
@@ -689,7 +696,19 @@ export class MainScene extends Phaser.Scene {
         minimumMoves: this.minimumMoves,
         elapsedMs: Math.max(0, Math.round(performance.now() - this.puzzleStartedAt)),
       })
+    } else if (newlyCompletedRows.length > 0) {
+      this.time.delayedCall(SWAP_ANIMATION_DURATION, () => this.playCompletionCelebration(newlyCompletedRows, false))
     }
+  }
+
+  private playCompletionCelebration(completedRows: number[], puzzleComplete: boolean): void {
+    const groups = this.tileSlots.map((visual) => [visual.background, visual.text])
+    const rows = Array.from({ length: this.puzzle.rows.length }, (_value, rowIndex) => groups.slice(rowIndex * 5, (rowIndex + 1) * 5))
+    if (puzzleComplete) {
+      celebrateCompletedPuzzle(this, rows)
+      return
+    }
+    completedRows.forEach((rowIndex) => celebrateCompletedRow(this, rows[rowIndex] ?? []))
   }
 
   private revealTile(slotIndex: number): void {
