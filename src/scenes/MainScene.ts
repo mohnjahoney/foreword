@@ -72,7 +72,7 @@ export class MainScene extends Phaser.Scene {
   private devPanelReady = false
   private openingAnimationActive = false
   private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
-  private moveBarFill!: Phaser.GameObjects.Rectangle
+  private moveBarBricks: Phaser.GameObjects.Rectangle[] = []
   private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
   private outOfMovesOverlay?: Phaser.GameObjects.Container
   private howToPlayOverlay!: Phaser.GameObjects.Container
@@ -179,6 +179,7 @@ export class MainScene extends Phaser.Scene {
     this.devPanelReady = false
     this.openingAnimationActive = false
     this.deferredUiObjects = []
+    this.moveBarBricks = []
     this.modeLabelAnimating = false
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
@@ -335,14 +336,21 @@ export class MainScene extends Phaser.Scene {
     const barLeft = 82
     const barWidth = 266
     const barY = boxTop + 47
+    const totalBricks = this.minimumMoves + EXTRA_MOVES
+    const brickGap = 3
+    const brickWidth = (barWidth - brickGap * (totalBricks - 1)) / totalBricks
+    const goalPosition = barLeft + this.minimumMoves * (brickWidth + brickGap) - (this.minimumMoves > 0 ? brickGap / 2 : 0)
     const objects: Phaser.GameObjects.GameObject[] = []
     objects.push(this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae))
     objects.push(this.add.text(barLeft, boxTop + 18, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0, 0.5))
-    const goalPosition = barLeft + barWidth * this.minimumMoves / (this.minimumMoves + EXTRA_MOVES)
     objects.push(this.add.text(goalPosition, boxTop + 18, "GOAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5, 0.5))
-    objects.push(this.add.rectangle(barLeft, barY, barWidth, 10, COLORS.button).setOrigin(0, 0.5))
-    this.moveBarFill = this.add.rectangle(barLeft, barY, barWidth, 10, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0.5).setScale(0, 1)
-    objects.push(this.moveBarFill)
+    this.moveBarBricks = Array.from({ length: totalBricks }, (_value, index) => {
+      const x = barLeft + index * (brickWidth + brickGap)
+      const color = index < this.minimumMoves ? 0xb7c0ae : 0xd8b7b0
+      const brick = this.add.rectangle(x, barY, brickWidth, 10, color).setOrigin(0, 0.5)
+      objects.push(brick)
+      return brick
+    })
     this.moveBarMinimumMarker = this.add.rectangle(goalPosition, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
     objects.push(this.moveBarMinimumMarker)
     this.updateMoveInfo()
@@ -384,20 +392,14 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateMoveInfo(): void {
-    if (!this.moveBarFill || !this.moveBarMinimumMarker) return
-    const barLeft = 82
-    const barWidth = 266
-    const moveLimit = this.minimumMoves + EXTRA_MOVES
-    const progress = moveLimit > 0
-      ? Math.min(1, this.movesTaken / moveLimit)
-      : 0
-    this.moveBarFill.setScale(progress, 1)
-    this.moveBarFill.setFillStyle(
-      this.movesTaken > this.minimumMoves
-        ? 0xb06a5f
-        : MainScene.ACTIVE_BUTTON_COLOR,
-    )
-    this.moveBarMinimumMarker.setX(barLeft + barWidth * this.minimumMoves / moveLimit)
+    if (!this.moveBarMinimumMarker) return
+    this.moveBarBricks.forEach((brick, index) => {
+      const isGoalBrick = index < this.minimumMoves
+      const isFilled = index < this.movesTaken
+      brick.setFillStyle(isFilled
+        ? (isGoalBrick ? MainScene.ACTIVE_BUTTON_COLOR : 0xb06a5f)
+        : (isGoalBrick ? 0xb7c0ae : 0xd8b7b0))
+    })
   }
 
   private buildInteractionTools(): void {
