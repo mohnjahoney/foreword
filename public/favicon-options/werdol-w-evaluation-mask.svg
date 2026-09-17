@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <path id="large-w" d="M8 10h9l5 32 5-20h10l5 20 5-32h9L49 54h-9L32 34 24 54h-9z"/>
+    <mask id="w-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="black"/>
+      <use href="#large-w" fill="white"/>
+    </mask>
+    <clipPath id="tile-1"><rect x="5" y="5" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-2"><rect x="23" y="5" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-3"><rect x="41" y="5" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-4"><rect x="5" y="23" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-5"><rect x="23" y="23" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-6"><rect x="41" y="23" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-7"><rect x="5" y="41" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-8"><rect x="23" y="41" width="17.5" height="17.5" rx="2"/></clipPath>
+    <clipPath id="tile-9"><rect x="41" y="41" width="17.5" height="17.5" rx="2"/></clipPath>
+  </defs>
+
+  <rect width="64" height="64" rx="10" fill="#f3eedf"/>
+
+  <g>
+    <rect x="5" y="5" width="17.5" height="17.5" rx="2" fill="#aaa396"/>
+    <rect x="23" y="5" width="17.5" height="17.5" rx="2" fill="#c49f52"/>
+    <rect x="41" y="5" width="17.5" height="17.5" rx="2" fill="#71845f"/>
+    <rect x="5" y="23" width="17.5" height="17.5" rx="2" fill="#c49f52"/>
+    <rect x="23" y="23" width="17.5" height="17.5" rx="2" fill="#aaa396"/>
+    <rect x="41" y="23" width="17.5" height="17.5" rx="2" fill="#aaa396"/>
+    <rect x="5" y="41" width="17.5" height="17.5" rx="2" fill="#aaa396"/>
+    <rect x="23" y="41" width="17.5" height="17.5" rx="2" fill="#71845f"/>
+    <rect x="41" y="41" width="17.5" height="17.5" rx="2" fill="#c49f52"/>
+  </g>
+
+  <g mask="url(#w-mask)">
+    <rect width="64" height="64" fill="#c49f52" clip-path="url(#tile-1)"/>
+    <rect width="64" height="64" fill="#71845f" clip-path="url(#tile-2)"/>
+    <rect width="64" height="64" fill="#c49f52" clip-path="url(#tile-3)"/>
+    <rect width="64" height="64" fill="#71845f" clip-path="url(#tile-4)"/>
+    <rect width="64" height="64" fill="#c49f52" clip-path="url(#tile-5)"/>
+    <rect width="64" height="64" fill="#71845f" clip-path="url(#tile-6)"/>
+    <rect width="64" height="64" fill="#71845f" clip-path="url(#tile-7)"/>
+    <rect width="64" height="64" fill="#c49f52" clip-path="url(#tile-8)"/>
+    <rect width="64" height="64" fill="#71845f" clip-path="url(#tile-9)"/>
+  </g>
+
+  <use href="#large-w" fill="none" stroke="#f3eedf" stroke-width="1.1" stroke-linejoin="round"/>
+</svg>
