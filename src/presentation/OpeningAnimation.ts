@@ -30,7 +30,10 @@ interface OpeningTile {
 export interface OpeningAnimationOptions {
   showAsterisk?: boolean
   showMarkup?: boolean
+  style?: OpeningAnimationStyle
 }
+
+export type OpeningAnimationStyle = "sequential" | "simultaneous"
 
 /** The anonymized Wordle prelude shown before the real Werdol board. */
 export class OpeningAnimation {
@@ -94,8 +97,9 @@ export class OpeningAnimation {
 
   private scheduleAnimation(): void {
     const rows = this.scrambledBoard.rows
+    const rowInterval = this.options.style === "simultaneous" ? 0 : ROW_INTERVAL
     rows.forEach((row, rowIndex) => {
-      const start = splashTime(520) + rowIndex * ROW_INTERVAL
+      const start = splashTime(520) + rowIndex * rowInterval
       for (let column = 0; column < 5; column += 1) {
         this.after(start + column * ENTRY_INTERVAL, () => {
           const tile = this.tiles[rowIndex * 5 + column]
@@ -111,7 +115,7 @@ export class OpeningAnimation {
       })
     })
 
-    const targetRevealAt = splashTime(520) + 4 * ROW_INTERVAL + 5 * ENTRY_INTERVAL + splashTime(170) + 5 * splashTime(88) + splashTime(300)
+    const targetRevealAt = splashTime(520) + 4 * rowInterval + 5 * ENTRY_INTERVAL + splashTime(170) + 5 * splashTime(88) + splashTime(300)
     this.after(targetRevealAt, () => {
       for (let column = 0; column < 5; column += 1) this.showLetter(20 + column)
     })

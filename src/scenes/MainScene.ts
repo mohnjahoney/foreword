@@ -12,7 +12,7 @@ import { ALLOWED_WORDS, ANSWER_WORDS } from "../core/words"
 import { createSeededRandom, nextPuzzleSeed, normalizeSeed, seedFromCurrentTime } from "../core/seededRandom"
 import { configureLogicalCamera, RENDER_SCALE } from "../style/rendering"
 import { startPuzzleAnalytics, trackWerdolEvent, trackSessionStarted } from "../analytics/tracker"
-import { OpeningAnimation } from "../presentation/OpeningAnimation"
+import { OpeningAnimation, type OpeningAnimationStyle } from "../presentation/OpeningAnimation"
 import { BOARD_LAYOUT, boardSlotCenter } from "../presentation/board/boardLayout"
 import { animateCorrectTileMark, markCorrectTile } from "../presentation/board/correctTileMarks"
 import { createTileBackground, createTileLetter, GAME_PRESENTATION, REVIEW_PRESENTATION, tileColor } from "../presentation/board/tileVisuals"
@@ -39,6 +39,7 @@ const ICON_KEYS = ["replace", "eye", "square", "layers-3", "rotate-ccw", "arrow-
 const OPENING_SEEN_KEY = "werdol-opening-seen"
 
 let pendingSceneData: SceneData | undefined
+let pendingOpeningStyle: OpeningAnimationStyle | undefined
 const PENDING_SETUP_STORAGE_KEY = "werdol-pending-setup"
 
 export class MainScene extends Phaser.Scene {
@@ -129,7 +130,9 @@ export class MainScene extends Phaser.Scene {
 
   create(): void {
     const data = pendingSceneData ?? readPendingSceneData()
+    const openingStyle = pendingOpeningStyle
     pendingSceneData = undefined
+    pendingOpeningStyle = undefined
     configureLogicalCamera(this)
     this.tileSlots = []
     this.letters = []
@@ -187,10 +190,10 @@ export class MainScene extends Phaser.Scene {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
     }
-    if (!this.puzzleCreationFailed && !this.hasSeenOpening()) {
+    if (!this.puzzleCreationFailed && (openingStyle !== undefined || !this.hasSeenOpening())) {
       this.preparedBoard = createScrambledBoard(this.puzzle, this.letterRandom)
       this.markOpeningSeen()
-      new OpeningAnimation(this, this.preparedBoard, () => undefined)
+      new OpeningAnimation(this, this.preparedBoard, () => undefined, { style: openingStyle ?? "sequential" })
     }
     addWerdolHeader(this)
     if (import.meta.env.DEV) {
@@ -258,8 +261,10 @@ export class MainScene extends Phaser.Scene {
 
   private buildNewPuzzleButton(): void {
     const button = this.add.rectangle(125, 620, 180, 38, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(215, 639, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
-    button.on("pointerdown", () => this.restartWithSetup({
+    this.add.text(215, 639, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    button.on("pointerdown", () => {
+      pendingOpeningStyle = "simultaneous"
+      this.restartWithSetup({
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
       minGreenTiles: this.minGreenTiles,
@@ -269,7 +274,8 @@ export class MainScene extends Phaser.Scene {
         this.seed,
         this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length,
       ),
-    }))
+      })
+    })
   }
 
   private buildHowToPlay(): void {
@@ -278,25 +284,28 @@ export class MainScene extends Phaser.Scene {
 
     this.howToPlayOverlay = this.add.container(0, 0).setDepth(30).setVisible(false)
     const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.18).setOrigin(0, 0).setInteractive()
-    const panel = this.add.rectangle(35, 260, 360, 230, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
-    const title = this.add.text(55, 282, "HOW TO PLAY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
-    const instructions = this.add.text(55, 320, "WERDOL begins where Wordle ends.\n\nThe board is already evaluated: the target word is correct, and the colors in the first four rows are in place—but their letters have been mixed up.\n\nTap two letters to swap them. Rebuild the four rows in as few moves as possible.\nGreen is correct, yellow is misplaced, and gray is absent.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 315 }, resolution: RENDER_SCALE })
+    const panel = this.add.rectangle(25, 170, 380, 500, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
+    const title = this.add.text(50, 192, "HOW TO PLAY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
+    const instructions = this.add.text(50, 230, "WERDOL begins where Wordle ends.\n\nThe board is already evaluated: the target word is correct, and the colors in the first four rows are in place—but their letters have been mixed up.\n\nTap two letters to swap them. Rebuild the four rows in as few moves as possible.\nGreen is correct, yellow is misplaced, and gray is absent.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 330 }, resolution: RENDER_SCALE })
     this.howToPlayOverlay.add([backdrop, panel, title, instructions])
     infoButton.on("pointerdown", () => this.howToPlayOverlay.setVisible(!this.howToPlayOverlay.visible))
     backdrop.on("pointerdown", () => this.howToPlayOverlay.setVisible(false))
   }
 
   private buildMoveInfo(): void {
-    const statsLeft = 95
-    const statsWidth = 240
-    const statsY = 535
-    const movesX = statsLeft + statsWidth * 0.3
-    const minimumX = statsLeft + statsWidth * 0.7
-    this.add.rectangle(statsLeft, statsY, statsWidth, 1, 0xc6bdae).setOrigin(0, 0.5)
-    this.add.text(movesX, statsY + 17, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.add.text(minimumX, statsY + 17, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.movesTakenText = this.add.text(movesX, statsY + 43, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.minimumMovesText = this.add.text(minimumX, statsY + 43, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const boxLeft = 55
+    const boxTop = 520
+    const boxWidth = 320
+    const boxHeight = 90
+    const movesX = 145
+    const minimumX = 285
+    const centerX = 215
+    this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae)
+    this.add.text(movesX, boxTop + 22, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.add.text(minimumX, boxTop + 22, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.movesTakenText = this.add.text(movesX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.add.text(centerX, boxTop + 58, "/", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", resolution: RENDER_SCALE }).setOrigin(0.5)
+    this.minimumMovesText = this.add.text(minimumX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     this.updateMoveInfo()
   }
 
