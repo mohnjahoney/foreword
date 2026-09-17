@@ -342,10 +342,20 @@ export class MainScene extends Phaser.Scene {
     backdrop.on("pointerdown", () => this.howToPlayOverlay.setVisible(false))
 
     const sayHello = this.add.text(215, 720, "say hello", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "12px", resolution: RENDER_SCALE }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    let feedbackTimer: Phaser.Time.TimerEvent | undefined
     sayHello.on("pointerover", () => sayHello.setColor(COLORS.ink))
     sayHello.on("pointerout", () => sayHello.setColor(COLORS.muted))
-    sayHello.on("pointerdown", () => {
-      window.location.href = "mailto:mohnjahoney@gmail.com"
+    sayHello.on("pointerdown", async () => {
+      try {
+        await navigator.clipboard.writeText("mohnjahoney@gmail.com")
+        sayHello.setText("email copied").setColor(COLORS.ink)
+        feedbackTimer?.remove()
+        feedbackTimer = this.time.delayedCall(1600, () => sayHello.setText("say hello").setColor(COLORS.muted))
+      } catch {
+        sayHello.setText("copy unavailable").setColor(COLORS.muted)
+        feedbackTimer?.remove()
+        feedbackTimer = this.time.delayedCall(1600, () => sayHello.setText("say hello"))
+      }
     })
     this.queueUiEntrance([sayHello])
   }
