@@ -11,6 +11,6 @@ export function addWerdolHeader(scene: Phaser.Scene, parent?: Phaser.GameObjects
   }).setOrigin(0.5)
   const rule = scene.add.graphics()
   rule.lineStyle(1, 0xc6bdae, 0.9)
-  rule.lineBetween(31, 115, 399, 115)
+  rule.lineBetween(31, 105, 399, 105)
   parent?.add([title, rule])
 }
