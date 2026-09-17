@@ -23,6 +23,9 @@ const COLORS = { ink: "#211f1a", muted: "#756d5e", reviewHover: 0xe5a5bc } as co
 const CELL_SIZE = BOARD_LAYOUT.tileSize
 const SWAP_SELECTION_DELAY = 140
 const SWAP_ANIMATION_DURATION = 480
+const UI_ENTRANCE_DURATION = 260
+const UI_ENTRANCE_OFFSET_Y = 12
+const UI_ENTRANCE_EASE = "Sine.Out"
 
 interface TileVisual {
   tile: LetterTile
@@ -261,7 +264,7 @@ export class MainScene extends Phaser.Scene {
 
   private buildNewPuzzleButton(): void {
     const button = this.add.rectangle(125, 620, 180, 38, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(215, 639, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const label = this.add.text(215, 639, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
       this.restartWithSetup({
@@ -276,6 +279,7 @@ export class MainScene extends Phaser.Scene {
       ),
       })
     })
+    this.animateUiEntrance([button, label])
   }
 
   private buildHowToPlay(): void {
@@ -300,13 +304,33 @@ export class MainScene extends Phaser.Scene {
     const movesX = 145
     const minimumX = 285
     const centerX = 215
-    this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae)
-    this.add.text(movesX, boxTop + 22, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.add.text(minimumX, boxTop + 22, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const objects: Phaser.GameObjects.GameObject[] = []
+    objects.push(this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae))
+    objects.push(this.add.text(movesX, boxTop + 22, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5))
+    objects.push(this.add.text(minimumX, boxTop + 22, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5))
     this.movesTakenText = this.add.text(movesX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    this.add.text(centerX, boxTop + 58, "/", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", resolution: RENDER_SCALE }).setOrigin(0.5)
+    objects.push(this.movesTakenText)
+    objects.push(this.add.text(centerX, boxTop + 58, "/", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", resolution: RENDER_SCALE }).setOrigin(0.5))
     this.minimumMovesText = this.add.text(minimumX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    objects.push(this.minimumMovesText)
     this.updateMoveInfo()
+    this.animateUiEntrance(objects)
+  }
+
+  private animateUiEntrance(objects: Phaser.GameObjects.GameObject[]): void {
+    objects.forEach((object) => {
+      const displayObject = object as Phaser.GameObjects.GameObject & { y: number; alpha: number }
+      const targetY = displayObject.y
+      displayObject.y += UI_ENTRANCE_OFFSET_Y
+      displayObject.alpha = 0
+      this.tweens.add({
+        targets: displayObject,
+        y: targetY,
+        alpha: 1,
+        duration: UI_ENTRANCE_DURATION,
+        ease: UI_ENTRANCE_EASE,
+      })
+    })
   }
 
   private updateMoveInfo(): void {
