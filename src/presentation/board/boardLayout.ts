@@ -1,6 +1,6 @@
 export const BOARD_LAYOUT = {
   anchorX: 215,
-  top: 150,
+  top: 135,
   tileSize: 56,
   gap: 10,
   rowStep: 73,

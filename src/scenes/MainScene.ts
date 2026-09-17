@@ -293,8 +293,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildNewPuzzleButton(): void {
-    const button = this.add.rectangle(125, 670, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 689, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const button = this.add.rectangle(125, 645, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 664, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerover", () => {
       button.setFillStyle(COLORS.buttonHover)
       label.setColor(COLORS.buttonHoverText)
@@ -321,8 +321,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildHowToPlay(): void {
-    const infoButton = this.add.circle(330, 689, 11, COLORS.button).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const infoLabel = this.add.text(330, 689, "i", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const infoButton = this.add.circle(330, 664, 11, COLORS.button).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const infoLabel = this.add.text(330, 664, "i", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     infoButton.on("pointerover", () => {
       infoButton.setFillStyle(COLORS.buttonHover)
       infoLabel.setColor(COLORS.buttonHoverText)
@@ -340,6 +340,14 @@ export class MainScene extends Phaser.Scene {
     this.howToPlayOverlay.add([backdrop, panel, title, instructions])
     infoButton.on("pointerdown", () => this.howToPlayOverlay.setVisible(!this.howToPlayOverlay.visible))
     backdrop.on("pointerdown", () => this.howToPlayOverlay.setVisible(false))
+
+    const sayHello = this.add.text(215, 720, "say hello", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "12px", resolution: RENDER_SCALE }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    sayHello.on("pointerover", () => sayHello.setColor(COLORS.ink))
+    sayHello.on("pointerout", () => sayHello.setColor(COLORS.muted))
+    sayHello.on("pointerdown", () => {
+      window.location.href = "mailto:mohnjahoney@gmail.com"
+    })
+    this.queueUiEntrance([sayHello])
   }
 
   private buildMoveInfo(): void {
