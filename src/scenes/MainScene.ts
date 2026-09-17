@@ -24,6 +24,9 @@ const COLORS = {
   muted: "#756d5e",
   button: 0xc6bdae,
   buttonHover: 0x71845f,
+  primaryButton: 0x71845f,
+  primaryButtonHover: 0x526646,
+  primaryButtonText: "#f3eedf",
   buttonHoverText: "#f3eedf",
   reviewHover: 0xe5a5bc,
 } as const
@@ -293,15 +296,15 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildNewPuzzleButton(): void {
-    const button = this.add.rectangle(125, 645, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 664, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const button = this.add.rectangle(125, 645, 180, 38, COLORS.primaryButton).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 664, "NEW PUZZLE", { color: COLORS.primaryButtonText, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     button.on("pointerover", () => {
-      button.setFillStyle(COLORS.buttonHover)
-      label.setColor(COLORS.buttonHoverText)
+      button.setFillStyle(COLORS.primaryButtonHover)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerout", () => {
-      button.setFillStyle(COLORS.button)
-      label.setColor(COLORS.ink)
+      button.setFillStyle(COLORS.primaryButton)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
@@ -919,15 +922,15 @@ export class MainScene extends Phaser.Scene {
     const panel = this.add.rectangle(40, 265, 350, 210, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
     const title = this.add.text(215, 310, "OUT OF MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
     const message = this.add.text(215, 355, "The puzzle is still unsolved.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", resolution: RENDER_SCALE }).setOrigin(0.5)
-    const button = this.add.rectangle(125, 405, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 424, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const button = this.add.rectangle(125, 405, 180, 38, COLORS.primaryButton).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 424, "NEW PUZZLE", { color: COLORS.primaryButtonText, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
     button.on("pointerover", () => {
-      button.setFillStyle(COLORS.buttonHover)
-      label.setColor(COLORS.buttonHoverText)
+      button.setFillStyle(COLORS.primaryButtonHover)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerout", () => {
-      button.setFillStyle(COLORS.button)
-      label.setColor(COLORS.ink)
+      button.setFillStyle(COLORS.primaryButton)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
@@ -963,15 +966,15 @@ export class MainScene extends Phaser.Scene {
     const title = this.add.text(215, 310, "SOLVED", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
     const target = this.add.text(215, 350, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", fontStyle: "bold", letterSpacing: 2, resolution: RENDER_SCALE }).setOrigin(0.5)
     const message = this.add.text(215, 382, phrase, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "17px", resolution: RENDER_SCALE }).setOrigin(0.5)
-    const button = this.add.rectangle(125, 415, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 434, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const button = this.add.rectangle(125, 415, 180, 38, COLORS.primaryButton).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 434, "NEW PUZZLE", { color: COLORS.primaryButtonText, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
     button.on("pointerover", () => {
-      button.setFillStyle(COLORS.buttonHover)
-      label.setColor(COLORS.buttonHoverText)
+      button.setFillStyle(COLORS.primaryButtonHover)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerout", () => {
-      button.setFillStyle(COLORS.button)
-      label.setColor(COLORS.ink)
+      button.setFillStyle(COLORS.primaryButton)
+      label.setColor(COLORS.primaryButtonText)
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
