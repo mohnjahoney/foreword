@@ -73,6 +73,12 @@ export class OpeningAnimation {
     this.layer.destroy(true)
   }
 
+  skip(): void {
+    if (this.finished) return
+    this.finished = true
+    this.destroy()
+  }
+
   private addHeader(): void {
     addWerdolHeader(this.scene, this.layer)
   }

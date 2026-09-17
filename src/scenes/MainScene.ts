@@ -78,6 +78,8 @@ export class MainScene extends Phaser.Scene {
   private preparedBoard?: ScrambledBoard
   private devPanelReady = false
   private openingAnimationActive = false
+  private openingAnimation?: OpeningAnimation
+  private openingSkipInProgress = false
   private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
   private moveBarBricks: Phaser.GameObjects.Rectangle[] = []
   private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
@@ -187,6 +189,8 @@ export class MainScene extends Phaser.Scene {
     this.preparedBoard = undefined
     this.devPanelReady = false
     this.openingAnimationActive = false
+    this.openingAnimation = undefined
+    this.openingSkipInProgress = false
     this.deferredUiObjects = []
     this.moveBarBricks = []
     this.modeLabelAnimating = false
@@ -221,7 +225,8 @@ export class MainScene extends Phaser.Scene {
     if (this.openingAnimationActive) {
       this.preparedBoard = createScrambledBoard(this.puzzle, this.letterRandom)
       this.markOpeningSeen()
-      new OpeningAnimation(this, this.preparedBoard, () => this.finishOpeningAnimation(), { style: openingStyle ?? "sequential" })
+      this.openingAnimation = new OpeningAnimation(this, this.preparedBoard, () => this.finishOpeningAnimation(), { style: openingStyle ?? "sequential" })
+      this.input.once("pointerdown", this.skipOpeningAnimation, this)
     }
     addWerdolHeader(this)
     if (import.meta.env.DEV) {
@@ -394,10 +399,24 @@ export class MainScene extends Phaser.Scene {
   }
 
   private finishOpeningAnimation(): void {
+    this.input.off("pointerdown", this.skipOpeningAnimation, this)
     this.openingAnimationActive = false
+    this.openingAnimation = undefined
+    this.openingSkipInProgress = false
     const objects = this.deferredUiObjects
     this.deferredUiObjects = []
     this.animateUiEntrance(objects)
+  }
+
+  private skipOpeningAnimation(): void {
+    if (!this.openingAnimationActive || this.openingSkipInProgress || this.openingAnimation === undefined) return
+    this.openingSkipInProgress = true
+    this.openingAnimation.skip()
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.finishOpeningAnimation()
+      this.cameras.main.fadeIn(200, 0, 0, 0)
+    })
+    this.cameras.main.fadeOut(200, 0, 0, 0)
   }
 
   private updateMoveInfo(): void {
