@@ -337,7 +337,7 @@ export class MainScene extends Phaser.Scene {
     objects.push(this.add.text(barLeft, boxTop + 18, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0, 0.5))
     objects.push(this.add.text(barLeft + barWidth, boxTop + 18, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(1, 0.5))
     objects.push(this.add.rectangle(barLeft, barY, barWidth, 10, COLORS.button).setOrigin(0, 0.5))
-    this.moveBarFill = this.add.rectangle(barLeft, barY, 0, 10, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0.5)
+    this.moveBarFill = this.add.rectangle(barLeft, barY, barWidth, 10, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0.5).setScale(0, 1)
     objects.push(this.moveBarFill)
     this.moveBarMinimumMarker = this.add.rectangle(barLeft + barWidth, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
     objects.push(this.moveBarMinimumMarker)
@@ -386,7 +386,7 @@ export class MainScene extends Phaser.Scene {
     const progress = this.minimumMoves > 0
       ? Math.min(1, this.movesTaken / this.minimumMoves)
       : 0
-    this.moveBarFill.setDisplaySize(barWidth * progress, 10)
+    this.moveBarFill.setScale(progress, 1)
     this.moveBarFill.setFillStyle(
       this.movesTaken > this.minimumMoves
         ? 0xb06a5f
