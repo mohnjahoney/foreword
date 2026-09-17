@@ -34,6 +34,13 @@ const EXTRA_MOVES = 3
 const UI_ENTRANCE_DURATION = 260
 const UI_ENTRANCE_OFFSET_Y = 12
 const UI_ENTRANCE_EASE = "Sine.Out"
+const FINISH_PHRASES = {
+  extraOne: ["Nicely done", "Sharp work", "Well played", "Nice solve", "Good work", "Nicely solved", "You got it", "Strong finish"],
+  extraTwo: ["Very nicely done", "Strong work", "A good solve", "Nicely solved", "Well found", "Good finish", "Nicely handled", "That works"],
+  extraThree: ["Great finish", "Well found", "You got there", "A fine solve", "Nicely done", "Strong finish", "Good solve", "That’s the word"],
+  goal: ["Excellent solve", "Beautifully solved", "Right on target", "You nailed it", "Great solve", "Perfectly placed", "Exactly right", "Nicely played"],
+  underGoal: ["Brilliant solve", "Exceptional work", "Beautiful work", "Masterfully solved", "Outstanding", "A superb solve", "That was excellent", "You found it"],
+} as const
 
 interface TileVisual {
   tile: LetterTile
@@ -75,6 +82,7 @@ export class MainScene extends Phaser.Scene {
   private moveBarBricks: Phaser.GameObjects.Rectangle[] = []
   private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
   private outOfMovesOverlay?: Phaser.GameObjects.Container
+  private finishOverlay?: Phaser.GameObjects.Container
   private howToPlayOverlay!: Phaser.GameObjects.Container
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
@@ -162,6 +170,7 @@ export class MainScene extends Phaser.Scene {
     this.playerPath = []
     this.reviewOverlay = undefined
     this.outOfMovesOverlay = undefined
+    this.finishOverlay = undefined
     this.reviewBoard = undefined
     this.reviewTimeline = undefined
     this.reviewTileTexts = []
@@ -767,7 +776,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private selectTile(slotIndex: number): void {
-    if (this.swapAnimating || this.outOfMovesOverlay !== undefined) return
+    if (this.swapAnimating || this.outOfMovesOverlay !== undefined || this.finishOverlay !== undefined) return
     const rowIndex = Math.floor(slotIndex / 5)
     if (this.isRowCorrect(rowIndex)) {
       this.selectedSlot = undefined
@@ -899,6 +908,49 @@ export class MainScene extends Phaser.Scene {
     this.tweens.add({ targets: overlay, alpha: 1, duration: UI_ENTRANCE_DURATION, ease: UI_ENTRANCE_EASE })
   }
 
+  private showFinishOverlay(): void {
+    if (this.finishOverlay !== undefined) return
+    const phraseBank = this.movesTaken < this.minimumMoves
+      ? FINISH_PHRASES.underGoal
+      : this.movesTaken === this.minimumMoves
+        ? FINISH_PHRASES.goal
+        : this.movesTaken === this.minimumMoves + 1
+          ? FINISH_PHRASES.extraOne
+          : this.movesTaken === this.minimumMoves + 2
+            ? FINISH_PHRASES.extraTwo
+            : FINISH_PHRASES.extraThree
+    const phrase = phraseBank[Math.floor(this.wordRandom() * phraseBank.length)] ?? "Excellent solve"
+    const overlay = this.add.container(0, 0).setDepth(50).setAlpha(0)
+    const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.72).setOrigin(0, 0).setInteractive()
+    const panel = this.add.rectangle(40, 265, 350, 210, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
+    const title = this.add.text(215, 310, "SOLVED", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const message = this.add.text(215, 355, phrase, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "18px", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const button = this.add.rectangle(125, 405, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 424, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
+    button.on("pointerover", () => {
+      button.setFillStyle(COLORS.buttonHover)
+      label.setColor(COLORS.buttonHoverText)
+    })
+    button.on("pointerout", () => {
+      button.setFillStyle(COLORS.button)
+      label.setColor(COLORS.ink)
+    })
+    button.on("pointerdown", () => {
+      pendingOpeningStyle = "simultaneous"
+      this.restartWithSetup({
+        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+        minGreenTiles: this.minGreenTiles,
+        minYellowTiles: this.minYellowTiles,
+        wordListMode: this.wordListMode,
+        seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
+      })
+    })
+    overlay.add([backdrop, panel, title, message, button, label])
+    this.finishOverlay = overlay
+    this.tweens.add({ targets: overlay, alpha: 1, duration: UI_ENTRANCE_DURATION, ease: UI_ENTRANCE_EASE })
+  }
+
   private playCompletionCelebration(completedRows: number[], puzzleComplete: boolean): void {
     const groups: Phaser.GameObjects.GameObject[][] = this.tileSlots.map((visual, slotIndex) => {
       const background = this.tileBackgrounds[slotIndex]
@@ -910,7 +962,7 @@ export class MainScene extends Phaser.Scene {
       let remainingRows = completedRows.length
       const startPuzzleCelebration = (): void => {
         if (remainingRows > 0) return
-        celebrateCompletedPuzzle(this, playableRows)
+        celebrateCompletedPuzzle(this, playableRows, () => this.showFinishOverlay())
       }
       if (remainingRows === 0) {
         startPuzzleCelebration()
