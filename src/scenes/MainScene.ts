@@ -943,9 +943,10 @@ export class MainScene extends Phaser.Scene {
     const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.72).setOrigin(0, 0).setInteractive()
     const panel = this.add.rectangle(40, 265, 350, 210, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
     const title = this.add.text(215, 310, "SOLVED", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
-    const message = this.add.text(215, 355, phrase, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "18px", resolution: RENDER_SCALE }).setOrigin(0.5)
-    const button = this.add.rectangle(125, 405, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 424, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const target = this.add.text(215, 350, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", fontStyle: "bold", letterSpacing: 2, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const message = this.add.text(215, 382, phrase, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "17px", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const button = this.add.rectangle(125, 415, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 434, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
     button.on("pointerover", () => {
       button.setFillStyle(COLORS.buttonHover)
       label.setColor(COLORS.buttonHoverText)
@@ -965,7 +966,7 @@ export class MainScene extends Phaser.Scene {
         seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
       })
     })
-    overlay.add([backdrop, panel, title, message, button, label])
+    overlay.add([backdrop, panel, title, target, message, button, label])
     this.finishOverlay = overlay
     this.tweens.add({ targets: overlay, alpha: 1, duration: UI_ENTRANCE_DURATION, ease: UI_ENTRANCE_EASE })
   }
