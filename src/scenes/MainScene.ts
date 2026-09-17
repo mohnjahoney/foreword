@@ -62,6 +62,8 @@ export class MainScene extends Phaser.Scene {
   private puzzleCreationFailed = false
   private preparedBoard?: ScrambledBoard
   private devPanelReady = false
+  private openingAnimationActive = false
+  private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
   private movesTakenText!: Phaser.GameObjects.Text
   private minimumMovesText!: Phaser.GameObjects.Text
   private howToPlayOverlay!: Phaser.GameObjects.Container
@@ -165,6 +167,8 @@ export class MainScene extends Phaser.Scene {
     this.puzzleCreationFailed = false
     this.preparedBoard = undefined
     this.devPanelReady = false
+    this.openingAnimationActive = false
+    this.deferredUiObjects = []
     this.modeLabelAnimating = false
     this.interactionMode = "swap"
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
@@ -193,10 +197,11 @@ export class MainScene extends Phaser.Scene {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
     }
-    if (!this.puzzleCreationFailed && (openingStyle !== undefined || !this.hasSeenOpening())) {
+    this.openingAnimationActive = !this.puzzleCreationFailed && (openingStyle !== undefined || !this.hasSeenOpening())
+    if (this.openingAnimationActive) {
       this.preparedBoard = createScrambledBoard(this.puzzle, this.letterRandom)
       this.markOpeningSeen()
-      new OpeningAnimation(this, this.preparedBoard, () => undefined, { style: openingStyle ?? "sequential" })
+      new OpeningAnimation(this, this.preparedBoard, () => this.finishOpeningAnimation(), { style: openingStyle ?? "sequential" })
     }
     addWerdolHeader(this)
     if (import.meta.env.DEV) {
@@ -279,7 +284,7 @@ export class MainScene extends Phaser.Scene {
       ),
       })
     })
-    this.animateUiEntrance([button, label])
+    this.queueUiEntrance([button, label])
   }
 
   private buildHowToPlay(): void {
@@ -314,15 +319,13 @@ export class MainScene extends Phaser.Scene {
     this.minimumMovesText = this.add.text(minimumX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     objects.push(this.minimumMovesText)
     this.updateMoveInfo()
-    this.animateUiEntrance(objects)
+    this.queueUiEntrance(objects)
   }
 
   private animateUiEntrance(objects: Phaser.GameObjects.GameObject[]): void {
     objects.forEach((object) => {
       const displayObject = object as Phaser.GameObjects.GameObject & { y: number; alpha: number }
-      const targetY = displayObject.y
-      displayObject.y += UI_ENTRANCE_OFFSET_Y
-      displayObject.alpha = 0
+      const targetY = displayObject.y - UI_ENTRANCE_OFFSET_Y
       this.tweens.add({
         targets: displayObject,
         y: targetY,
@@ -331,6 +334,26 @@ export class MainScene extends Phaser.Scene {
         ease: UI_ENTRANCE_EASE,
       })
     })
+  }
+
+  private queueUiEntrance(objects: Phaser.GameObjects.GameObject[]): void {
+    objects.forEach((object) => {
+      const displayObject = object as Phaser.GameObjects.GameObject & { y: number; alpha: number }
+      displayObject.y += UI_ENTRANCE_OFFSET_Y
+      displayObject.alpha = 0
+    })
+    if (this.openingAnimationActive) {
+      this.deferredUiObjects.push(...objects)
+    } else {
+      this.animateUiEntrance(objects)
+    }
+  }
+
+  private finishOpeningAnimation(): void {
+    this.openingAnimationActive = false
+    const objects = this.deferredUiObjects
+    this.deferredUiObjects = []
+    this.animateUiEntrance(objects)
   }
 
   private updateMoveInfo(): void {
