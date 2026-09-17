@@ -19,7 +19,14 @@ import { createTileBackground, createTileLetter, GAME_PRESENTATION, REVIEW_PRESE
 import { celebrateCompletedPuzzle, celebrateCompletedRow } from "../presentation/celebrations"
 import { addWerdolHeader } from "../presentation/WerdolHeader"
 
-const COLORS = { ink: "#211f1a", muted: "#756d5e", reviewHover: 0xe5a5bc } as const
+const COLORS = {
+  ink: "#211f1a",
+  muted: "#756d5e",
+  button: 0xc6bdae,
+  buttonHover: 0x71845f,
+  buttonHoverText: "#f3eedf",
+  reviewHover: 0xe5a5bc,
+} as const
 const CELL_SIZE = BOARD_LAYOUT.tileSize
 const SWAP_SELECTION_DELAY = 140
 const SWAP_ANIMATION_DURATION = 480
@@ -64,8 +71,8 @@ export class MainScene extends Phaser.Scene {
   private devPanelReady = false
   private openingAnimationActive = false
   private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
-  private movesTakenText!: Phaser.GameObjects.Text
-  private minimumMovesText!: Phaser.GameObjects.Text
+  private moveBarFill!: Phaser.GameObjects.Rectangle
+  private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
   private howToPlayOverlay!: Phaser.GameObjects.Container
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
@@ -268,8 +275,16 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildNewPuzzleButton(): void {
-    const button = this.add.rectangle(125, 620, 180, 38, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const label = this.add.text(215, 639, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const button = this.add.rectangle(125, 670, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 689, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    button.on("pointerover", () => {
+      button.setFillStyle(COLORS.buttonHover)
+      label.setColor(COLORS.buttonHoverText)
+    })
+    button.on("pointerout", () => {
+      button.setFillStyle(COLORS.button)
+      label.setColor(COLORS.ink)
+    })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
       this.restartWithSetup({
@@ -288,8 +303,16 @@ export class MainScene extends Phaser.Scene {
   }
 
   private buildHowToPlay(): void {
-    const infoButton = this.add.circle(330, 639, 11, 0xf3eedf).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.add.text(330, 639, "i", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    const infoButton = this.add.circle(330, 689, 11, COLORS.button).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const infoLabel = this.add.text(330, 689, "i", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
+    infoButton.on("pointerover", () => {
+      infoButton.setFillStyle(COLORS.buttonHover)
+      infoLabel.setColor(COLORS.buttonHoverText)
+    })
+    infoButton.on("pointerout", () => {
+      infoButton.setFillStyle(COLORS.button)
+      infoLabel.setColor(COLORS.ink)
+    })
 
     this.howToPlayOverlay = this.add.container(0, 0).setDepth(30).setVisible(false)
     const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.18).setOrigin(0, 0).setInteractive()
@@ -303,21 +326,21 @@ export class MainScene extends Phaser.Scene {
 
   private buildMoveInfo(): void {
     const boxLeft = 55
-    const boxTop = 520
+    const boxTop = 535
     const boxWidth = 320
-    const boxHeight = 90
-    const movesX = 145
-    const minimumX = 285
-    const centerX = 215
+    const boxHeight = 78
+    const barLeft = 82
+    const barWidth = 266
+    const barY = boxTop + 47
     const objects: Phaser.GameObjects.GameObject[] = []
     objects.push(this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae))
-    objects.push(this.add.text(movesX, boxTop + 22, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5))
-    objects.push(this.add.text(minimumX, boxTop + 22, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5))
-    this.movesTakenText = this.add.text(movesX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    objects.push(this.movesTakenText)
-    objects.push(this.add.text(centerX, boxTop + 58, "/", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", resolution: RENDER_SCALE }).setOrigin(0.5))
-    this.minimumMovesText = this.add.text(minimumX, boxTop + 58, "", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    objects.push(this.minimumMovesText)
+    objects.push(this.add.text(barLeft, boxTop + 18, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0, 0.5))
+    objects.push(this.add.text(barLeft + barWidth, boxTop + 18, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(1, 0.5))
+    objects.push(this.add.rectangle(barLeft, barY, barWidth, 10, COLORS.button).setOrigin(0, 0.5))
+    this.moveBarFill = this.add.rectangle(barLeft, barY, 0, 10, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0.5)
+    objects.push(this.moveBarFill)
+    this.moveBarMinimumMarker = this.add.rectangle(barLeft + barWidth, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
+    objects.push(this.moveBarMinimumMarker)
     this.updateMoveInfo()
     this.queueUiEntrance(objects)
   }
@@ -357,8 +380,19 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateMoveInfo(): void {
-    this.movesTakenText?.setText(String(this.movesTaken))
-    this.minimumMovesText?.setText(String(this.minimumMoves))
+    if (!this.moveBarFill || !this.moveBarMinimumMarker) return
+    const barLeft = 82
+    const barWidth = 266
+    const progress = this.minimumMoves > 0
+      ? Math.min(1, this.movesTaken / this.minimumMoves)
+      : 0
+    this.moveBarFill.setDisplaySize(barWidth * progress, 10)
+    this.moveBarFill.setFillStyle(
+      this.movesTaken > this.minimumMoves
+        ? 0xb06a5f
+        : MainScene.ACTIVE_BUTTON_COLOR,
+    )
+    this.moveBarMinimumMarker.setX(barLeft + barWidth)
   }
 
   private buildInteractionTools(): void {
