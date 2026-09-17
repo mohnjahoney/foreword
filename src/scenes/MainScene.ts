@@ -316,9 +316,9 @@ export class MainScene extends Phaser.Scene {
 
     this.howToPlayOverlay = this.add.container(0, 0).setDepth(30).setVisible(false)
     const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.18).setOrigin(0, 0).setInteractive()
-    const panel = this.add.rectangle(25, 170, 380, 500, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
+    const panel = this.add.rectangle(25, 170, 380, 400, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
     const title = this.add.text(50, 192, "HOW TO PLAY", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "13px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
-    const instructions = this.add.text(50, 230, "WERDOL begins where Wordle ends.\n\nThe board is already evaluated: the target word is correct, and the colors in the first four rows are in place—but their letters have been mixed up.\n\nTap two letters to swap them. Rebuild the four rows in as few moves as possible.\nGreen is correct, yellow is misplaced, and gray is absent.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 330 }, resolution: RENDER_SCALE })
+    const instructions = this.add.text(50, 230, "WERDOL begins where Wordle ends...\n\nA Wordle game has been played and completed.\n\nHowever!..\n\nThe letters in the first four rows have been mixed up, but the colors stayed in place.\n\nTap two letters to swap. Tiles become square when they receive the right letter. Rebuild the four rows in as few moves as possible.\n\nGreen is correct, yellow is misplaced, and gray is absent.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", lineSpacing: 5, wordWrap: { width: 330 }, resolution: RENDER_SCALE })
     this.howToPlayOverlay.add([backdrop, panel, title, instructions])
     infoButton.on("pointerdown", () => this.howToPlayOverlay.setVisible(!this.howToPlayOverlay.visible))
     backdrop.on("pointerdown", () => this.howToPlayOverlay.setVisible(false))
