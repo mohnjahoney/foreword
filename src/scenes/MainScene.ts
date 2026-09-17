@@ -30,6 +30,7 @@ const COLORS = {
 const CELL_SIZE = BOARD_LAYOUT.tileSize
 const SWAP_SELECTION_DELAY = 140
 const SWAP_ANIMATION_DURATION = 480
+const EXTRA_MOVES = 3
 const UI_ENTRANCE_DURATION = 260
 const UI_ENTRANCE_OFFSET_Y = 12
 const UI_ENTRANCE_EASE = "Sine.Out"
@@ -73,6 +74,7 @@ export class MainScene extends Phaser.Scene {
   private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
   private moveBarFill!: Phaser.GameObjects.Rectangle
   private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
+  private outOfMovesOverlay?: Phaser.GameObjects.Container
   private howToPlayOverlay!: Phaser.GameObjects.Container
   private requireTargetLetterInEachRow = false
   private requireGreenTileInEachRow = false
@@ -159,6 +161,7 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = 0
     this.playerPath = []
     this.reviewOverlay = undefined
+    this.outOfMovesOverlay = undefined
     this.reviewBoard = undefined
     this.reviewTimeline = undefined
     this.reviewTileTexts = []
@@ -335,11 +338,12 @@ export class MainScene extends Phaser.Scene {
     const objects: Phaser.GameObjects.GameObject[] = []
     objects.push(this.add.rectangle(boxLeft, boxTop, boxWidth, boxHeight, 0xfffdf7).setOrigin(0, 0).setStrokeStyle(1, 0xc6bdae))
     objects.push(this.add.text(barLeft, boxTop + 18, "MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0, 0.5))
-    objects.push(this.add.text(barLeft + barWidth, boxTop + 18, "MINIMUM", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(1, 0.5))
+    const goalPosition = barLeft + barWidth * this.minimumMoves / (this.minimumMoves + EXTRA_MOVES)
+    objects.push(this.add.text(goalPosition, boxTop + 18, "GOAL", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5, 0.5))
     objects.push(this.add.rectangle(barLeft, barY, barWidth, 10, COLORS.button).setOrigin(0, 0.5))
     this.moveBarFill = this.add.rectangle(barLeft, barY, barWidth, 10, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0.5).setScale(0, 1)
     objects.push(this.moveBarFill)
-    this.moveBarMinimumMarker = this.add.rectangle(barLeft + barWidth, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
+    this.moveBarMinimumMarker = this.add.rectangle(goalPosition, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
     objects.push(this.moveBarMinimumMarker)
     this.updateMoveInfo()
     this.queueUiEntrance(objects)
@@ -383,8 +387,9 @@ export class MainScene extends Phaser.Scene {
     if (!this.moveBarFill || !this.moveBarMinimumMarker) return
     const barLeft = 82
     const barWidth = 266
-    const progress = this.minimumMoves > 0
-      ? Math.min(1, this.movesTaken / this.minimumMoves)
+    const moveLimit = this.minimumMoves + EXTRA_MOVES
+    const progress = moveLimit > 0
+      ? Math.min(1, this.movesTaken / moveLimit)
       : 0
     this.moveBarFill.setScale(progress, 1)
     this.moveBarFill.setFillStyle(
@@ -392,7 +397,7 @@ export class MainScene extends Phaser.Scene {
         ? 0xb06a5f
         : MainScene.ACTIVE_BUTTON_COLOR,
     )
-    this.moveBarMinimumMarker.setX(barLeft + barWidth)
+    this.moveBarMinimumMarker.setX(barLeft + barWidth * this.minimumMoves / moveLimit)
   }
 
   private buildInteractionTools(): void {
@@ -760,7 +765,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private selectTile(slotIndex: number): void {
-    if (this.swapAnimating) return
+    if (this.swapAnimating || this.outOfMovesOverlay !== undefined) return
     const rowIndex = Math.floor(slotIndex / 5)
     if (this.isRowCorrect(rowIndex)) {
       this.selectedSlot = undefined
@@ -842,9 +847,54 @@ export class MainScene extends Phaser.Scene {
         minimumMoves: this.minimumMoves,
         elapsedMs: Math.max(0, Math.round(performance.now() - this.puzzleStartedAt)),
       })
+    } else if (this.movesTaken >= this.minimumMoves + EXTRA_MOVES) {
+      this.time.delayedCall(SWAP_ANIMATION_DURATION, () => this.showOutOfMoves())
+      trackWerdolEvent("werdol:puzzle_ended", {
+        puzzleId: this.puzzleId,
+        puzzleNumber: this.puzzleNumber,
+        outcome: "out_of_moves",
+        randomSeed: this.seed,
+        wordListMode: this.wordListMode,
+        movesTaken: this.movesTaken,
+        minimumMoves: this.minimumMoves,
+        elapsedMs: Math.max(0, Math.round(performance.now() - this.puzzleStartedAt)),
+      })
     } else if (newlyCompletedRows.length > 0) {
       this.time.delayedCall(SWAP_ANIMATION_DURATION, () => this.playCompletionCelebration(newlyCompletedRows, false))
     }
+  }
+
+  private showOutOfMoves(): void {
+    if (this.outOfMovesOverlay !== undefined) return
+    const overlay = this.add.container(0, 0).setDepth(50).setAlpha(0)
+    const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.72).setOrigin(0, 0).setInteractive()
+    const panel = this.add.rectangle(40, 265, 350, 210, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
+    const title = this.add.text(215, 310, "OUT OF MOVES", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
+    const message = this.add.text(215, 355, "The puzzle is still unsolved.", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const button = this.add.rectangle(125, 405, 180, 38, COLORS.button).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const label = this.add.text(215, 424, "NEW PUZZLE", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 0.5, resolution: RENDER_SCALE }).setOrigin(0.5)
+    button.on("pointerover", () => {
+      button.setFillStyle(COLORS.buttonHover)
+      label.setColor(COLORS.buttonHoverText)
+    })
+    button.on("pointerout", () => {
+      button.setFillStyle(COLORS.button)
+      label.setColor(COLORS.ink)
+    })
+    button.on("pointerdown", () => {
+      pendingOpeningStyle = "simultaneous"
+      this.restartWithSetup({
+        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+        minGreenTiles: this.minGreenTiles,
+        minYellowTiles: this.minYellowTiles,
+        wordListMode: this.wordListMode,
+        seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
+      })
+    })
+    overlay.add([backdrop, panel, title, message, button, label])
+    this.outOfMovesOverlay = overlay
+    this.tweens.add({ targets: overlay, alpha: 1, duration: UI_ENTRANCE_DURATION, ease: UI_ENTRANCE_EASE })
   }
 
   private playCompletionCelebration(completedRows: number[], puzzleComplete: boolean): void {
