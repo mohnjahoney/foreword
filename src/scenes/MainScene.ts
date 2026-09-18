@@ -284,7 +284,7 @@ export class MainScene extends Phaser.Scene {
     } else {
       this.buildBoard()
       if (this.showExactMinimum) {
-        this.exactMinimumMoves = countOptimalMoves(this.puzzle, tilesFromOccupancy(this.initialOccupancy, this.letters))
+        this.exactMinimumMoves = countOptimalMoves(this.puzzle, tilesFromOccupancy(this.occupancy, this.letters))
       }
     }
     trackWerdolEvent("werdol:puzzle_started", {
@@ -753,8 +753,8 @@ export class MainScene extends Phaser.Scene {
       this.showExactMinimum = !this.showExactMinimum
       devSessionState.showExactMinimum = this.showExactMinimum
       if (this.showExactMinimum) {
-        const initialTiles = tilesFromOccupancy(this.initialOccupancy, this.letters)
-        this.exactMinimumMoves = countOptimalMoves(this.puzzle, initialTiles)
+        const currentTiles = tilesFromOccupancy(this.occupancy, this.letters)
+        this.exactMinimumMoves = countOptimalMoves(this.puzzle, currentTiles)
       } else {
         this.exactMinimumMoves = undefined
       }
