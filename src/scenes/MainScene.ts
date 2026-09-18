@@ -59,16 +59,28 @@ type InteractionMode = "swap" | "reveal"
 type WordListMode = "easy" | "hard"
 type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
 type ReviewPathKind = "player" | "reference"
+type DevTab = "setup" | "solve" | "review"
 
 const ICON_KEYS = ["replace", "eye", "square", "layers-3", "rotate-ccw", "arrow-right"] as const
 const OPENING_SEEN_KEY = "werdol-opening-seen"
 
 let pendingSceneData: SceneData | undefined
 let pendingOpeningStyle: OpeningAnimationStyle | undefined
-const PENDING_SETUP_STORAGE_KEY = "werdol-pending-setup"
 const CHALLENGE_TARGET = "xxxxx"
 const CHALLENGE_ROWS = ["eager", "hewed", "sleet", "bumpy"] as const
 const CHALLENGE_INITIAL_LETTERS = "arehegwsleedtbmueepy"
+
+const devSessionState: {
+  activeTab: DevTab
+  showExactMinimum: boolean
+  interactionMode: InteractionMode
+  magnificationMode: MagnificationMode
+} = {
+  activeTab: "setup",
+  showExactMinimum: false,
+  interactionMode: "swap",
+  magnificationMode: "cards",
+}
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: WerdolPuzzle
@@ -115,6 +127,9 @@ export class MainScene extends Phaser.Scene {
   private puzzleStartedAt = 0
   private puzzleEndedTracked = false
   private devPanel!: Phaser.GameObjects.Container
+  private devTabContainers!: Record<DevTab, Phaser.GameObjects.Container>
+  private devTabButtons!: Record<DevTab, Phaser.GameObjects.Rectangle>
+  private devTabLabels!: Record<DevTab, Phaser.GameObjects.Text>
   private devOverlay!: Phaser.GameObjects.Rectangle
   private devPanelBackground!: Phaser.GameObjects.Rectangle
   private devCloseButton!: Phaser.GameObjects.Text
@@ -171,7 +186,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   create(): void {
-    const data = pendingSceneData ?? readPendingSceneData()
+    const data = pendingSceneData ?? {}
     const openingStyle = pendingOpeningStyle
     pendingSceneData = undefined
     pendingOpeningStyle = undefined
@@ -189,7 +204,7 @@ export class MainScene extends Phaser.Scene {
     this.minimumMoves = 0
     this.challengeBenchmark = undefined
     this.exactMinimumMoves = undefined
-    this.showExactMinimum = false
+    this.showExactMinimum = devSessionState.showExactMinimum
     this.playerPath = []
     this.reviewOverlay = undefined
     this.outOfMovesOverlay = undefined
@@ -215,7 +230,8 @@ export class MainScene extends Phaser.Scene {
     this.deferredUiObjects = []
     this.moveBarBricks = []
     this.modeLabelAnimating = false
-    this.interactionMode = "swap"
+    this.interactionMode = devSessionState.interactionMode
+    this.magnificationMode = devSessionState.magnificationMode
     this.requireTargetLetterInEachRow = data.requireTargetLetterInEachRow ?? false
     this.requireGreenTileInEachRow = data.requireGreenTileInEachRow ?? false
     this.minGreenTiles = clampTileMinimum(data.minGreenTiles ?? 4)
@@ -267,6 +283,9 @@ export class MainScene extends Phaser.Scene {
       this.add.text(31, 265, "Try reducing the constraints in DEV.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "16px", wordWrap: { width: 360 }, resolution: RENDER_SCALE })
     } else {
       this.buildBoard()
+      if (this.showExactMinimum) {
+        this.exactMinimumMoves = countOptimalMoves(this.puzzle, tilesFromOccupancy(this.initialOccupancy, this.letters))
+      }
     }
     trackWerdolEvent("werdol:puzzle_started", {
       puzzleId: this.puzzleId,
@@ -278,6 +297,7 @@ export class MainScene extends Phaser.Scene {
       wordsConsidered: this.puzzle.wordsConsidered ?? 0,
     })
     this.buildMoveInfo()
+    this.updateExactMinimumMarker()
     this.buildNewPuzzleButton()
     this.buildHowToPlay()
     this.buildDevPanel()
@@ -310,11 +330,6 @@ export class MainScene extends Phaser.Scene {
 
   private restartWithSetup(setup: SceneData): void {
     pendingSceneData = setup
-    try {
-      window.localStorage.setItem(PENDING_SETUP_STORAGE_KEY, JSON.stringify(setup))
-    } catch {
-      // The in-memory handoff remains sufficient when storage is unavailable.
-    }
     this.scene.restart()
   }
 
@@ -331,17 +346,7 @@ export class MainScene extends Phaser.Scene {
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
-      this.restartWithSetup({
-      requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-      requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-      minGreenTiles: this.minGreenTiles,
-      minYellowTiles: this.minYellowTiles,
-      wordListMode: this.wordListMode,
-      seed: nextPuzzleSeed(
-        this.seed,
-        this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length,
-      ),
-      })
+      this.restartWithSetup(this.nextPuzzleSetup())
     })
     this.queueUiEntrance([button, label])
   }
@@ -512,20 +517,20 @@ export class MainScene extends Phaser.Scene {
   private buildInteractionTools(): void {
     const normalX = 20
     const revealX = 101
-    const y = 300
-    const modeLabel = this.add.text(20, 270, "Interaction mode", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
+    const y = 135
+    const modeLabel = this.add.text(20, 105, "Interaction mode", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
     this.normalModeButton = this.add.rectangle(normalX, y, 72, 38, MainScene.ACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.revealModeButton = this.add.rectangle(revealX, y, 72, 38, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.normalModeLabel = createIconLabel(this, normalX + 36, y + 19, "swap")
     this.revealModeLabel = createIconLabel(this, revealX + 36, y + 19, "reveal")
     this.normalModeButton.on("pointerdown", () => this.toggleInteractionMode())
     this.revealModeButton.on("pointerdown", () => this.toggleInteractionMode())
-    this.devPanel.add([modeLabel, this.normalModeButton, this.revealModeButton, this.normalModeLabel, this.revealModeLabel])
-    this.setInteractionMode("swap", false)
+    this.devTabContainers.solve.add([modeLabel, this.normalModeButton, this.revealModeButton, this.normalModeLabel, this.revealModeLabel])
+    this.setInteractionMode(this.interactionMode, false)
   }
 
   private buildDeveloperMoveControls(): void {
-    const y = 300
+    const y = 135
     const nextButton = this.add.rectangle(220, y, 45, 34, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const nextIcon = this.add.image(242, y + 17, "werdol-arrow-right").setDisplaySize(25, 25).setDepth(1)
     nextButton.on("pointerdown", () => this.performNextAlgorithmicSwap())
@@ -535,7 +540,7 @@ export class MainScene extends Phaser.Scene {
     const reviewButton = this.add.rectangle(220, y + 45, 95, 28, MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0, 0).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     const reviewLabel = this.add.text(267, y + 59, "REVIEW", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5).setDepth(1)
     reviewButton.on("pointerdown", () => this.enterReviewMode())
-    this.devPanel.add([nextButton, nextIcon, resetButton, resetLabel, reviewButton, reviewLabel])
+    this.devTabContainers.solve.add([nextButton, nextIcon, resetButton, resetLabel, reviewButton, reviewLabel])
   }
 
   private performNextAlgorithmicSwap(): void {
@@ -558,7 +563,7 @@ export class MainScene extends Phaser.Scene {
     const hardX = this.wordListMode === "easy" ? 148 : 67
     this.easyModeLabel = createIconLabel(this, easyX, y + 19, "easy")
     this.hardModeLabel = createIconLabel(this, hardX, y + 19, "hard")
-    this.devPanel.add([this.easyModeButton, this.hardModeButton, this.easyModeLabel, this.hardModeLabel])
+    this.devTabContainers.setup.add([this.easyModeButton, this.hardModeButton, this.easyModeLabel, this.hardModeLabel])
     this.easyModeButton.on("pointerdown", () => this.setWordListMode("easy"))
     this.hardModeButton.on("pointerdown", () => this.setWordListMode("hard"))
   }
@@ -570,7 +575,7 @@ export class MainScene extends Phaser.Scene {
     this.seedInput.node.querySelector("input")?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") this.applySeed()
     })
-    this.devPanel.add([label, this.seedInput])
+    this.devTabContainers.setup.add([label, this.seedInput])
   }
 
   private applySeed(): void {
@@ -604,6 +609,7 @@ export class MainScene extends Phaser.Scene {
     if (mode === this.interactionMode && animate) return
     const shouldAnimate = animate && mode !== this.interactionMode
     this.interactionMode = mode
+    devSessionState.interactionMode = mode
     if (shouldAnimate && !this.modeLabelAnimating) {
       this.modeLabelAnimating = true
       this.animateLabelExchange(this.normalModeLabel, this.revealModeLabel)
@@ -652,15 +658,59 @@ export class MainScene extends Phaser.Scene {
     })
   }
 
+  private createDevTabs(): void {
+    this.devTabContainers = {
+      setup: this.add.container(0, 0),
+      solve: this.add.container(0, 0),
+      review: this.add.container(0, 0),
+    }
+    this.devTabButtons = {} as Record<DevTab, Phaser.GameObjects.Rectangle>
+    this.devTabLabels = {} as Record<DevTab, Phaser.GameObjects.Text>
+    const tabs: Array<{ id: DevTab; label: string; x: number }> = [
+      { id: "setup", label: "SETUP", x: 65 },
+      { id: "solve", label: "SOLVE", x: 190 },
+      { id: "review", label: "REVIEW", x: 315 },
+    ]
+    for (const tab of tabs) {
+      const button = this.add.rectangle(tab.x, 54, 110, 28, MainScene.INACTIVE_BUTTON_COLOR)
+        .setOrigin(0.5)
+        .setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR)
+        .setInteractive({ useHandCursor: true })
+      const label = this.add.text(tab.x, 54, tab.label, {
+        color: COLORS.ink,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "10px",
+        fontStyle: "bold",
+        letterSpacing: 0.7,
+        resolution: RENDER_SCALE,
+      }).setOrigin(0.5)
+      button.on("pointerdown", () => this.setDevTab(tab.id))
+      this.devTabButtons[tab.id] = button
+      this.devTabLabels[tab.id] = label
+      this.devPanel.add([button, label, this.devTabContainers[tab.id]])
+    }
+  }
+
+  private setDevTab(tab: DevTab): void {
+    devSessionState.activeTab = tab
+    for (const id of ["setup", "solve", "review"] as const) {
+      const selected = id === tab
+      this.devTabContainers[id]?.setVisible(selected)
+      this.devTabButtons[id]?.setFillStyle(selected ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
+      this.devTabLabels[id]?.setColor(selected ? COLORS.primaryButtonText : COLORS.ink)
+    }
+  }
+
   private buildDevPanel(): void {
     this.devOverlay = this.add.rectangle(0, 0, 430, 760, 0x000000, 0).setOrigin(0, 0).setDepth(49).setInteractive()
     this.devOverlay.on("pointerdown", () => this.setDevPanelVisible(false))
     this.devPanel = this.add.container(25, 95).setDepth(50)
     const panel = this.add.rectangle(0, 0, 380, 585, 0xfaf6e9).setOrigin(0, 0).setStrokeStyle(2, 0x756d5e).setInteractive()
     this.devPanel.add(panel)
+    this.createDevTabs()
     this.buildInteractionTools()
     this.buildDeveloperMoveControls()
-    const heading = this.add.text(20, 18, "PUZZLE SETUP", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
+    const heading = this.add.text(20, 18, "DEV", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "14px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE })
     const close = this.add.text(355, 18, "CLOSE", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     close.on("pointerdown", () => this.setDevPanelVisible(false))
     const wordListLabel = this.add.text(20, 345, "Word list", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
@@ -691,16 +741,17 @@ export class MainScene extends Phaser.Scene {
     greenPlus.on("pointerdown", () => this.adjustTileMinimum("green", 1))
     yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
     yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
-    const challengeLabel = this.add.text(205, 43, "Greedy test", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
-    this.devChallengeToggle = this.add.rectangle(345, 48, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    const challengeLabel = this.add.text(20, 300, "Greedy test", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
+    this.devChallengeToggle = this.add.rectangle(330, 305, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
     this.devChallengeToggle.on("pointerdown", () => {
       this.challengingTestPattern = !this.challengingTestPattern
       this.updateDevToggle()
     })
-    const exactLabel = this.add.text(205, 95, "Show exact minimum", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
-    this.devExactToggle = this.add.rectangle(345, 100, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    const exactLabel = this.add.text(20, 220, "Show exact minimum", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
+    this.devExactToggle = this.add.rectangle(330, 225, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
     this.devExactToggle.on("pointerdown", () => {
       this.showExactMinimum = !this.showExactMinimum
+      devSessionState.showExactMinimum = this.showExactMinimum
       if (this.showExactMinimum) {
         const initialTiles = tilesFromOccupancy(this.initialOccupancy, this.letters)
         this.exactMinimumMoves = countOptimalMoves(this.puzzle, initialTiles)
@@ -710,25 +761,29 @@ export class MainScene extends Phaser.Scene {
       this.updateExactMinimumMarker()
       this.updateDevToggle()
     })
-    const magnificationLabel = this.add.text(20, 455, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
-    this.centerMagnificationButton = this.add.rectangle(65, 490, 112, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.continuousMagnificationButton = this.add.rectangle(190, 490, 112, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    this.cardMagnificationButton = this.add.rectangle(315, 490, 112, 30, this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
-    const centerMagnificationText = this.add.text(65, 490, "A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    const continuousMagnificationText = this.add.text(190, 490, "B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
-    const cardMagnificationText = this.add.text(315, 490, "C · CARDS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const magnificationLabel = this.add.text(20, 105, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
+    this.centerMagnificationButton = this.add.rectangle(65, 145, 112, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.continuousMagnificationButton = this.add.rectangle(190, 145, 112, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    this.cardMagnificationButton = this.add.rectangle(315, 145, 112, 30, this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
+    const centerMagnificationText = this.add.text(65, 145, "A · CENTER", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const continuousMagnificationText = this.add.text(190, 145, "B · CONTINUOUS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
+    const cardMagnificationText = this.add.text(315, 145, "C · CARDS", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "9px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(0.5)
     this.centerMagnificationButton.on("pointerdown", () => this.setMagnificationMode("center"))
     this.continuousMagnificationButton.on("pointerdown", () => this.setMagnificationMode("continuous"))
     this.cardMagnificationButton.on("pointerdown", () => this.setMagnificationMode("cards"))
     const note = this.add.text(20, 525, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 }, resolution: RENDER_SCALE })
-    this.replayOpeningButton = this.add.text(20, 555, "REPLAY OPENING", { color: COLORS.ink, backgroundColor: "#c6bdae", fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setPadding(10, 7).setInteractive({ useHandCursor: true })
+    this.replayOpeningButton = this.add.text(20, 220, "REPLAY OPENING", { color: COLORS.ink, backgroundColor: "#c6bdae", fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setPadding(10, 7).setInteractive({ useHandCursor: true })
     this.replayOpeningButton.on("pointerdown", () => this.replayOpening())
-    this.devPanel.add([heading, close, wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, exactLabel, this.devExactToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, challengeLabel, this.devChallengeToggle, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note, this.replayOpeningButton])
+    this.devPanel.add([heading, close])
+    this.devTabContainers.setup.add([wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, challengeLabel, this.devChallengeToggle, note])
+    this.devTabContainers.solve.add([exactLabel, this.devExactToggle])
+    this.devTabContainers.review.add([magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, this.replayOpeningButton])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
     this.updateTileMinimumText()
     this.updateMagnificationButtons()
+    this.setDevTab(devSessionState.activeTab)
     this.setDevPanelVisible(false)
     this.devPanelReady = true
   }
@@ -760,6 +815,7 @@ export class MainScene extends Phaser.Scene {
       this.devGreenToggle.setInteractive({ useHandCursor: true })
       this.devChallengeToggle.setInteractive({ useHandCursor: true })
       this.devExactToggle.setInteractive({ useHandCursor: true })
+      Object.values(this.devTabButtons).forEach((button) => button.setInteractive({ useHandCursor: true }))
       this.normalModeButton.setInteractive({ useHandCursor: true })
       this.revealModeButton.setInteractive({ useHandCursor: true })
       this.easyModeButton.setInteractive({ useHandCursor: true })
@@ -779,6 +835,7 @@ export class MainScene extends Phaser.Scene {
       this.devGreenToggle.disableInteractive()
       this.devChallengeToggle.disableInteractive()
       this.devExactToggle.disableInteractive()
+      Object.values(this.devTabButtons).forEach((button) => button.disableInteractive())
       this.normalModeButton.disableInteractive()
       this.revealModeButton.disableInteractive()
       this.easyModeButton.disableInteractive()
@@ -795,6 +852,7 @@ export class MainScene extends Phaser.Scene {
 
   private setMagnificationMode(mode: MagnificationMode): void {
     this.magnificationMode = mode
+    devSessionState.magnificationMode = mode
     this.updateMagnificationButtons()
     if (this.reviewOverlay !== undefined) this.refreshReview()
   }
@@ -814,6 +872,16 @@ export class MainScene extends Phaser.Scene {
       wordListMode: this.wordListMode,
       challengingTestPattern: this.challengingTestPattern,
       seed: this.seed,
+    }
+  }
+
+  private nextPuzzleSetup(): SceneData {
+    return {
+      ...this.currentPuzzleSetup(),
+      seed: nextPuzzleSeed(
+        this.seed,
+        this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length,
+      ),
     }
   }
 
@@ -1023,15 +1091,7 @@ export class MainScene extends Phaser.Scene {
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
-      this.restartWithSetup({
-        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-        minGreenTiles: this.minGreenTiles,
-        minYellowTiles: this.minYellowTiles,
-        wordListMode: this.wordListMode,
-        challengingTestPattern: this.challengingTestPattern,
-        seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
-      })
+      this.restartWithSetup(this.nextPuzzleSetup())
     })
     overlay.add([backdrop, panel, title, message, button, label])
     this.outOfMovesOverlay = overlay
@@ -1068,14 +1128,7 @@ export class MainScene extends Phaser.Scene {
     })
     button.on("pointerdown", () => {
       pendingOpeningStyle = "simultaneous"
-      this.restartWithSetup({
-        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-        minGreenTiles: this.minGreenTiles,
-        minYellowTiles: this.minYellowTiles,
-        wordListMode: this.wordListMode,
-        seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
-      })
+      this.restartWithSetup(this.nextPuzzleSetup())
     })
     overlay.add([backdrop, panel, title, target, message, button, label])
     this.finishOverlay = overlay
@@ -1577,18 +1630,6 @@ function quadraticPoint(
 
 function clampTileMinimum(value: number): number {
   return Math.max(0, Math.min(6, Math.round(value)))
-}
-
-function readPendingSceneData(): SceneData {
-  try {
-    const stored = window.localStorage.getItem(PENDING_SETUP_STORAGE_KEY)
-    if (!stored) return {}
-    window.localStorage.removeItem(PENDING_SETUP_STORAGE_KEY)
-    const parsed = JSON.parse(stored) as SceneData
-    return parsed && typeof parsed === "object" ? parsed : {}
-  } catch {
-    return {}
-  }
 }
 
 function inputForSeed(element: Phaser.GameObjects.DOMElement): HTMLInputElement {
