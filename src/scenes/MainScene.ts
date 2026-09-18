@@ -1,8 +1,9 @@
 import Phaser from "phaser"
 import { createScrambledBoard, type Letter, type LetterTile, type ScrambledBoard } from "../core/board"
+import { evaluateGuess } from "../core/evaluateGuess"
 import { createWerdolPuzzle, type WerdolPuzzle, type PuzzleSetup } from "../core/puzzle"
 import { countBoardTiles } from "../core/validation"
-import { countAlgorithmicMoves, findNextSwap } from "../core/minimumMoves"
+import { benchmarkSolvers, countAlgorithmicMoves, countOptimalMoves, findNextSwap, type SolverBenchmark } from "../core/minimumMoves"
 import { countCorrectTiles, createReferencePath, type ReviewState } from "../core/reviewPath"
 import { countCorrectOccupancy, isLetterCorrectAtSlot, swapOccupancy, tilesFromOccupancy } from "../core/boardState"
 import { createTimelineRects, DEFAULT_MAGNIFICATION_CONFIG, layoutTimelineRects, timelineScaleForStateCount, timelineWidthForStateCount, type MagnificationMode, type TimelineRect } from "../core/reviewTimeline"
@@ -50,7 +51,9 @@ interface TileVisual {
   text: Phaser.GameObjects.Text
 }
 
-interface SceneData extends PuzzleSetup {}
+interface SceneData extends PuzzleSetup {
+  challengingTestPattern?: boolean
+}
 type InteractionMode = "swap" | "reveal"
 type WordListMode = "easy" | "hard"
 type IconKind = "swap" | "reveal" | "easy" | "hard" | "reset"
@@ -62,6 +65,9 @@ const OPENING_SEEN_KEY = "werdol-opening-seen"
 let pendingSceneData: SceneData | undefined
 let pendingOpeningStyle: OpeningAnimationStyle | undefined
 const PENDING_SETUP_STORAGE_KEY = "werdol-pending-setup"
+const CHALLENGE_TARGET = "xxxxx"
+const CHALLENGE_ROWS = ["eager", "hewed", "sleet", "bumpy"] as const
+const CHALLENGE_INITIAL_LETTERS = "arehegwsleedtbmueepy"
 
 export class MainScene extends Phaser.Scene {
   private puzzle!: WerdolPuzzle
@@ -77,6 +83,9 @@ export class MainScene extends Phaser.Scene {
   private swapAnimating = false
   private movesTaken = 0
   private minimumMoves = 0
+  private challengeBenchmark?: SolverBenchmark
+  private exactMinimumMoves?: number
+  private showExactMinimum = false
   private puzzleCreationFailed = false
   private preparedBoard?: ScrambledBoard
   private devPanelReady = false
@@ -86,6 +95,7 @@ export class MainScene extends Phaser.Scene {
   private deferredUiObjects: Phaser.GameObjects.GameObject[] = []
   private moveBarBricks: Phaser.GameObjects.Rectangle[] = []
   private moveBarMinimumMarker!: Phaser.GameObjects.Rectangle
+  private moveBarOptimalMarker?: Phaser.GameObjects.Rectangle
   private outOfMovesOverlay?: Phaser.GameObjects.Container
   private finishOverlay?: Phaser.GameObjects.Container
   private howToPlayOverlay!: Phaser.GameObjects.Container
@@ -94,6 +104,8 @@ export class MainScene extends Phaser.Scene {
   private minGreenTiles = 4
   private minYellowTiles = 4
   private wordListMode: WordListMode = "easy"
+  private challengingTestPattern = false
+  private appliedChallengingTestPattern = false
   private seed = 0
   private wordRandom!: () => number
   private letterRandom!: () => number
@@ -108,6 +120,8 @@ export class MainScene extends Phaser.Scene {
   private replayOpeningButton!: Phaser.GameObjects.Text
   private devToggle!: Phaser.GameObjects.Rectangle
   private devGreenToggle!: Phaser.GameObjects.Rectangle
+  private devChallengeToggle!: Phaser.GameObjects.Rectangle
+  private devExactToggle!: Phaser.GameObjects.Rectangle
   private devGreenCountText!: Phaser.GameObjects.Text
   private devYellowCountText!: Phaser.GameObjects.Text
   private devCountButtons: Phaser.GameObjects.Text[] = []
@@ -172,6 +186,9 @@ export class MainScene extends Phaser.Scene {
     this.swapAnimating = false
     this.movesTaken = 0
     this.minimumMoves = 0
+    this.challengeBenchmark = undefined
+    this.exactMinimumMoves = undefined
+    this.showExactMinimum = false
     this.playerPath = []
     this.reviewOverlay = undefined
     this.outOfMovesOverlay = undefined
@@ -203,6 +220,8 @@ export class MainScene extends Phaser.Scene {
     this.minGreenTiles = clampTileMinimum(data.minGreenTiles ?? 4)
     this.minYellowTiles = clampTileMinimum(data.minYellowTiles ?? 4)
     this.wordListMode = data.wordListMode ?? "easy"
+    this.challengingTestPattern = data.challengingTestPattern ?? false
+    this.appliedChallengingTestPattern = this.challengingTestPattern
     this.seed = normalizeSeed(data.seed ?? seedFromCurrentTime())
     this.wordRandom = createSeededRandom(this.seed, 1)
     this.letterRandom = createSeededRandom(this.seed, 2)
@@ -213,13 +232,18 @@ export class MainScene extends Phaser.Scene {
     this.puzzleStartedAt = performance.now()
     trackSessionStarted()
     try {
-      this.puzzle = createWerdolPuzzle(this.wordRandom, {
-        requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
-        requireGreenTileInEachRow: this.requireGreenTileInEachRow,
-        minGreenTiles: this.minGreenTiles,
-        minYellowTiles: this.minYellowTiles,
-        wordListMode: this.wordListMode,
-      })
+      this.puzzle = this.challengingTestPattern
+        ? {
+            target: CHALLENGE_TARGET,
+            rows: CHALLENGE_ROWS.map((word) => ({ intendedGuess: word, pattern: evaluateGuess(word, CHALLENGE_TARGET) })),
+          }
+        : createWerdolPuzzle(this.wordRandom, {
+            requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
+            requireGreenTileInEachRow: this.requireGreenTileInEachRow,
+            minGreenTiles: this.minGreenTiles,
+            minYellowTiles: this.minYellowTiles,
+            wordListMode: this.wordListMode,
+          })
     } catch {
       this.puzzleCreationFailed = true
       this.puzzle = { target: "", rows: [] }
@@ -388,8 +412,43 @@ export class MainScene extends Phaser.Scene {
     })
     this.moveBarMinimumMarker = this.add.rectangle(goalPosition, barY, 2, 22, MainScene.BUTTON_STROKE_COLOR).setOrigin(0.5)
     objects.push(this.moveBarMinimumMarker)
+    this.moveBarOptimalMarker = undefined
+    if (this.challengingTestPattern) {
+      const benchmark = this.challengeBenchmark
+      objects.push(this.add.text(215, boxTop + 62, `APP ${benchmark?.greedyMoves ?? this.minimumMoves} MOVES · ${benchmark?.greedyMilliseconds.toFixed(2) ?? "—"} MS`, {
+        color: COLORS.muted,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "9px",
+        fontStyle: "bold",
+        letterSpacing: 0.4,
+        resolution: RENDER_SCALE,
+      }).setOrigin(0.5, 0.5))
+      objects.push(this.add.text(215, boxTop + 73, `SEARCH ${benchmark?.optimalMoves ?? "—"} MOVES · ${benchmark?.optimalMilliseconds.toFixed(2) ?? "—"} MS`, {
+        color: COLORS.muted,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "9px",
+        fontStyle: "bold",
+        letterSpacing: 0.4,
+        resolution: RENDER_SCALE,
+      }).setOrigin(0.5, 0.5))
+    }
     this.updateMoveInfo()
     this.queueUiEntrance(objects)
+  }
+
+  private updateExactMinimumMarker(): void {
+    this.moveBarOptimalMarker?.destroy()
+    this.moveBarOptimalMarker = undefined
+    if (!this.showExactMinimum || this.exactMinimumMoves === undefined || !this.moveBarMinimumMarker) return
+
+    const boxTop = 535
+    const barLeft = 82
+    const barWidth = 266
+    const totalBricks = this.minimumMoves + EXTRA_MOVES
+    const brickGap = 3
+    const brickWidth = (barWidth - brickGap * (totalBricks - 1)) / totalBricks
+    const markerX = barLeft + this.exactMinimumMoves * (brickWidth + brickGap) - (this.exactMinimumMoves > 0 ? brickGap / 2 : 0)
+    this.moveBarOptimalMarker = this.add.rectangle(markerX, boxTop + 47, 3, 28, COLORS.reviewHover).setOrigin(0.5)
   }
 
   private animateUiEntrance(objects: Phaser.GameObjects.GameObject[]): void {
@@ -536,6 +595,7 @@ export class MainScene extends Phaser.Scene {
         minGreenTiles: this.minGreenTiles,
         minYellowTiles: this.minYellowTiles,
         wordListMode: this.wordListMode,
+        challengingTestPattern: this.challengingTestPattern,
         seed: this.seed,
       })
     })
@@ -632,6 +692,25 @@ export class MainScene extends Phaser.Scene {
     greenPlus.on("pointerdown", () => this.adjustTileMinimum("green", 1))
     yellowMinus.on("pointerdown", () => this.adjustTileMinimum("yellow", -1))
     yellowPlus.on("pointerdown", () => this.adjustTileMinimum("yellow", 1))
+    const challengeLabel = this.add.text(205, 43, "Greedy test", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
+    this.devChallengeToggle = this.add.rectangle(345, 48, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    this.devChallengeToggle.on("pointerdown", () => {
+      this.challengingTestPattern = !this.challengingTestPattern
+      this.updateDevToggle()
+    })
+    const exactLabel = this.add.text(205, 95, "Show exact minimum", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", resolution: RENDER_SCALE })
+    this.devExactToggle = this.add.rectangle(345, 100, 30, 18).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    this.devExactToggle.on("pointerdown", () => {
+      this.showExactMinimum = !this.showExactMinimum
+      if (this.showExactMinimum) {
+        const initialTiles = tilesFromOccupancy(this.initialOccupancy, this.letters)
+        this.exactMinimumMoves = countOptimalMoves(this.puzzle, initialTiles)
+      } else {
+        this.exactMinimumMoves = undefined
+      }
+      this.updateExactMinimumMarker()
+      this.updateDevToggle()
+    })
     const magnificationLabel = this.add.text(20, 455, "Timeline magnification", { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "15px", resolution: RENDER_SCALE })
     this.centerMagnificationButton = this.add.rectangle(65, 490, 112, 30, this.magnificationMode === "center" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
     this.continuousMagnificationButton = this.add.rectangle(190, 490, 112, 30, this.magnificationMode === "continuous" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR).setOrigin(0.5).setStrokeStyle(1, MainScene.BUTTON_STROKE_COLOR).setInteractive({ useHandCursor: true })
@@ -645,7 +724,7 @@ export class MainScene extends Phaser.Scene {
     const note = this.add.text(20, 525, "Changes take effect when the panel closes.", { color: COLORS.muted, fontFamily: "Georgia, Times New Roman, serif", fontSize: "14px", wordWrap: { width: 330 }, resolution: RENDER_SCALE })
     this.replayOpeningButton = this.add.text(20, 555, "REPLAY OPENING", { color: COLORS.ink, backgroundColor: "#c6bdae", fontFamily: "Arial, sans-serif", fontSize: "10px", fontStyle: "bold", resolution: RENDER_SCALE }).setPadding(10, 7).setInteractive({ useHandCursor: true })
     this.replayOpeningButton.on("pointerdown", () => this.replayOpening())
-    this.devPanel.add([heading, close, wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note, this.replayOpeningButton])
+    this.devPanel.add([heading, close, wordListLabel, toggleLabel, this.devToggle, greenLabel, this.devGreenToggle, exactLabel, this.devExactToggle, greenCountLabel, yellowCountLabel, this.devGreenCountText, this.devYellowCountText, greenMinus, greenPlus, yellowMinus, yellowPlus, challengeLabel, this.devChallengeToggle, magnificationLabel, this.centerMagnificationButton, this.continuousMagnificationButton, this.cardMagnificationButton, centerMagnificationText, continuousMagnificationText, cardMagnificationText, note, this.replayOpeningButton])
     this.devPanelBackground = panel
     this.devCloseButton = close
     this.updateDevToggle()
@@ -669,7 +748,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private setDevPanelVisible(visible: boolean): void {
-    if (!visible && this.devPanelReady && this.devPanel.visible && (this.puzzleCreationFailed || !this.puzzleSatisfiesSetup(this.currentPuzzleSetup()))) {
+    if (!visible && this.devPanelReady && this.devPanel.visible && (this.puzzleCreationFailed || this.appliedChallengingTestPattern !== this.challengingTestPattern || !this.puzzleSatisfiesSetup(this.currentPuzzleSetup()))) {
       this.restartWithSetup(this.currentPuzzleSetup())
       return
     }
@@ -680,6 +759,8 @@ export class MainScene extends Phaser.Scene {
       this.devCloseButton.setInteractive({ useHandCursor: true })
       this.devToggle.setInteractive({ useHandCursor: true })
       this.devGreenToggle.setInteractive({ useHandCursor: true })
+      this.devChallengeToggle.setInteractive({ useHandCursor: true })
+      this.devExactToggle.setInteractive({ useHandCursor: true })
       this.normalModeButton.setInteractive({ useHandCursor: true })
       this.revealModeButton.setInteractive({ useHandCursor: true })
       this.easyModeButton.setInteractive({ useHandCursor: true })
@@ -697,6 +778,8 @@ export class MainScene extends Phaser.Scene {
       this.devCloseButton.disableInteractive()
       this.devToggle.disableInteractive()
       this.devGreenToggle.disableInteractive()
+      this.devChallengeToggle.disableInteractive()
+      this.devExactToggle.disableInteractive()
       this.normalModeButton.disableInteractive()
       this.revealModeButton.disableInteractive()
       this.easyModeButton.disableInteractive()
@@ -723,18 +806,20 @@ export class MainScene extends Phaser.Scene {
     this.cardMagnificationButton?.setFillStyle(this.magnificationMode === "cards" ? MainScene.ACTIVE_BUTTON_COLOR : MainScene.INACTIVE_BUTTON_COLOR)
   }
 
-  private currentPuzzleSetup(): PuzzleSetup {
+  private currentPuzzleSetup(): SceneData {
     return {
       requireTargetLetterInEachRow: this.requireTargetLetterInEachRow,
       requireGreenTileInEachRow: this.requireGreenTileInEachRow,
       minGreenTiles: this.minGreenTiles,
       minYellowTiles: this.minYellowTiles,
       wordListMode: this.wordListMode,
+      challengingTestPattern: this.challengingTestPattern,
       seed: this.seed,
     }
   }
 
   private puzzleSatisfiesSetup(setup: PuzzleSetup): boolean {
+    if (this.challengingTestPattern) return true
     return this.puzzle.rows.every((row) => {
       if (setup.requireTargetLetterInEachRow && !row.pattern.some((result) => result !== "absent")) return false
       if (setup.requireGreenTileInEachRow && !row.pattern.some((result) => result === "correct")) return false
@@ -751,16 +836,21 @@ export class MainScene extends Phaser.Scene {
     this.devToggle.setStrokeStyle(2, this.requireTargetLetterInEachRow ? 0x4c7b43 : 0x756d5e)
     this.devGreenToggle.setFillStyle(this.requireGreenTileInEachRow ? 0x71845f : 0xc6bdae)
     this.devGreenToggle.setStrokeStyle(2, this.requireGreenTileInEachRow ? 0x4c7b43 : 0x756d5e)
+    this.devChallengeToggle?.setFillStyle(this.challengingTestPattern ? 0x71845f : 0xc6bdae)
+    this.devChallengeToggle?.setStrokeStyle(2, this.challengingTestPattern ? 0x4c7b43 : 0x756d5e)
+    this.devExactToggle?.setFillStyle(this.showExactMinimum ? 0x71845f : 0xc6bdae)
+    this.devExactToggle?.setStrokeStyle(2, this.showExactMinimum ? 0x4c7b43 : 0x756d5e)
   }
 
   private buildBoard(): void {
-    const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom)
+    const board = this.preparedBoard ?? createScrambledBoard(this.puzzle, this.letterRandom, this.challengingTestPattern ? CHALLENGE_INITIAL_LETTERS : undefined)
     this.preparedBoard = undefined
     this.letters = board.letters
     this.occupancy = [...board.occupancy]
     this.initialOccupancy = [...board.initialOccupancy]
     this.initialTileIds = board.tiles.map((tile) => tile.id)
-    this.minimumMoves = countAlgorithmicMoves(this.puzzle, board.tiles)
+    this.challengeBenchmark = this.challengingTestPattern ? benchmarkSolvers(this.puzzle, board.tiles) : undefined
+    this.minimumMoves = this.challengeBenchmark?.greedyMoves ?? countAlgorithmicMoves(this.puzzle, board.tiles)
     const rows = board.rows
     rows.forEach((row, rowIndex) => {
       const isFrozen = board.frozenRows.includes(rowIndex)
@@ -940,6 +1030,7 @@ export class MainScene extends Phaser.Scene {
         minGreenTiles: this.minGreenTiles,
         minYellowTiles: this.minYellowTiles,
         wordListMode: this.wordListMode,
+        challengingTestPattern: this.challengingTestPattern,
         seed: nextPuzzleSeed(this.seed, this.wordListMode === "easy" ? ANSWER_WORDS.length : ALLOWED_WORDS.length),
       })
     })

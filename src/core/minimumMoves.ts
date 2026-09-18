@@ -8,6 +8,13 @@ export interface ProposedSwap {
   improvement: 1 | 2
 }
 
+export interface SolverBenchmark {
+  greedyMoves: number
+  greedyMilliseconds: number
+  optimalMoves: number
+  optimalMilliseconds: number
+}
+
 function expectedCharacter(puzzle: WerdolPuzzle, slotIndex: number): string | undefined {
   const rowIndex = Math.floor(slotIndex / TILES_PER_ROW)
   const row = puzzle.rows[rowIndex]
@@ -66,4 +73,78 @@ export function countAlgorithmicMoves(puzzle: WerdolPuzzle, startingTiles: reado
     tiles[next.secondSlot] = firstTile
     moves += 1
   }
+}
+
+/** Finds the true minimum for arbitrary swaps while treating equal letters as interchangeable. */
+export function countOptimalMoves(puzzle: WerdolPuzzle, startingTiles: readonly LetterTile[]): number {
+  const totalSlots = puzzle.rows.length * TILES_PER_ROW
+  const expected = Array.from({ length: totalSlots }, (_value, slotIndex) => expectedCharacter(puzzle, slotIndex))
+  const current = startingTiles.slice(0, totalSlots)
+  const positionsByLetter = new Map<string, number[]>()
+  const goalsByLetter = new Map<string, number[]>()
+
+  current.forEach((tile, slotIndex) => {
+    const positions = positionsByLetter.get(tile.letter) ?? []
+    positions.push(slotIndex)
+    positionsByLetter.set(tile.letter, positions)
+  })
+  expected.forEach((letter, slotIndex) => {
+    if (letter === undefined) return
+    const goals = goalsByLetter.get(letter) ?? []
+    goals.push(slotIndex)
+    goalsByLetter.set(letter, goals)
+  })
+
+  const mapping = Array<number | undefined>(totalSlots).fill(undefined)
+  let bestMoves = totalSlots
+  const groups = [...positionsByLetter.entries()]
+
+  const visitGroup = (groupIndex: number): void => {
+    if (groupIndex === groups.length) {
+      const visited = Array(totalSlots).fill(false)
+      let cycles = 0
+      for (let slotIndex = 0; slotIndex < totalSlots; slotIndex += 1) {
+        if (visited[slotIndex]) continue
+        cycles += 1
+        let next = slotIndex
+        while (!visited[next]) {
+          visited[next] = true
+          next = mapping[next]!
+        }
+      }
+      bestMoves = Math.min(bestMoves, totalSlots - cycles)
+      return
+    }
+
+    const [letter, positions] = groups[groupIndex]!
+    const goals = [...(goalsByLetter.get(letter) ?? [])]
+    const assign = (positionIndex: number): void => {
+      if (positionIndex === positions.length) {
+        visitGroup(groupIndex + 1)
+        return
+      }
+      for (let goalIndex = 0; goalIndex < goals.length; goalIndex += 1) {
+        const goal = goals[goalIndex]
+        if (goal === undefined) continue
+        goals.splice(goalIndex, 1)
+        mapping[positions[positionIndex]!] = goal
+        assign(positionIndex + 1)
+        goals.splice(goalIndex, 0, goal)
+      }
+    }
+    assign(0)
+  }
+
+  visitGroup(0)
+  return bestMoves
+}
+
+export function benchmarkSolvers(puzzle: WerdolPuzzle, startingTiles: readonly LetterTile[]): SolverBenchmark {
+  const greedyStart = performance.now()
+  const greedyMoves = countAlgorithmicMoves(puzzle, startingTiles)
+  const greedyMilliseconds = performance.now() - greedyStart
+  const optimalStart = performance.now()
+  const optimalMoves = countOptimalMoves(puzzle, startingTiles)
+  const optimalMilliseconds = performance.now() - optimalStart
+  return { greedyMoves, greedyMilliseconds, optimalMoves, optimalMilliseconds }
 }

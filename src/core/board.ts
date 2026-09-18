@@ -38,6 +38,7 @@ export interface ScrambledBoard {
 export function createScrambledBoard(
   puzzle: WerdolPuzzle,
   random = Math.random,
+  initialLetters?: string,
 ): ScrambledBoard {
   if (puzzle.rows.length !== ROW_COUNT) {
     throw new Error(`Werdol boards must contain exactly ${ROW_COUNT} rows`)
@@ -74,7 +75,7 @@ export function createScrambledBoard(
       targetCharacter,
     })),
   )
-  const shuffledTiles = shuffled(letters, random)
+  const shuffledTiles = initialLetters === undefined ? shuffled(letters, random) : arrangeLetters(letters, initialLetters)
   const initialOccupancy = boardTiles.map((tile) => tile.occupyingLetterId)
   const occupancy = [...shuffledTiles.map((letter) => letter.id), ...targetLetters.map((letter) => letter.id)]
   const initialTiles: LetterTile[] = allLetters.map((letter) => ({
@@ -99,6 +100,19 @@ export function createScrambledBoard(
     })),
     frozenRows: [ROW_COUNT],
   }
+}
+
+function arrangeLetters(letters: readonly Letter[], arrangement: string): Letter[] {
+  if (arrangement.length !== letters.length) {
+    throw new Error(`Initial arrangement must contain exactly ${letters.length} letters`)
+  }
+
+  const remaining = [...letters]
+  return [...arrangement].map((character) => {
+    const index = remaining.findIndex((letter) => letter.character === character)
+    if (index < 0) throw new Error(`Initial arrangement contains an unexpected letter: ${character}`)
+    return remaining.splice(index, 1)[0]!
+  })
 }
 
 function shuffled<T>(items: readonly T[], random: () => number): T[] {
