@@ -23,6 +23,7 @@ import { addWerdolHeader } from "../presentation/WerdolHeader"
 const COLORS = {
   ink: "#211f1a",
   muted: "#756d5e",
+  mutedNumeric: 0x756d5e,
   button: 0xc6bdae,
   buttonHover: 0x71845f,
   primaryButton: 0x71845f,
@@ -256,10 +257,10 @@ export class MainScene extends Phaser.Scene {
       this.input.once("pointerdown", this.skipOpeningAnimation, this)
     }
     addWerdolHeader(this)
-    if (import.meta.env.DEV) {
-      const devButton = this.add.text(398, 30, "PUZZLE SETUP ▾", { color: COLORS.muted, fontFamily: "Arial, sans-serif", fontSize: "11px", fontStyle: "bold", resolution: RENDER_SCALE }).setOrigin(1, 0.5).setPadding(14, 10).setInteractive({ useHandCursor: true })
-      devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
-    }
+    const devButton = this.add.circle(410, 18, 8, COLORS.button, 0.92)
+      .setStrokeStyle(1.5, COLORS.mutedNumeric)
+      .setInteractive({ useHandCursor: true })
+    devButton.on("pointerdown", () => this.setDevPanelVisible(!this.devPanel.visible))
 
     if (this.puzzleCreationFailed) {
       this.add.text(31, 235, "NO PUZZLE FOUND", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", resolution: RENDER_SCALE })
@@ -279,9 +280,7 @@ export class MainScene extends Phaser.Scene {
     this.buildMoveInfo()
     this.buildNewPuzzleButton()
     this.buildHowToPlay()
-    if (import.meta.env.DEV) {
-      this.buildDevPanel()
-    }
+    this.buildDevPanel()
   }
 
   private hasSeenOpening(): boolean {
