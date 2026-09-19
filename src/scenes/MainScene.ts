@@ -1111,7 +1111,18 @@ export class MainScene extends Phaser.Scene {
             : FINISH_PHRASES.extraThree
     const phrase = phraseBank[Math.floor(this.wordRandom() * phraseBank.length)] ?? "Excellent solve"
     const overlay = this.add.container(0, 0).setDepth(50).setAlpha(0)
-    const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.72).setOrigin(0, 0).setInteractive()
+    const backdrop = this.add.rectangle(0, 0, 430, 760, 0x211f1a, 0.72).setOrigin(0, 0)
+    const dismissRegion = (x: number, y: number, width: number, height: number): Phaser.GameObjects.Rectangle => {
+      const region = this.add.rectangle(x, y, width, height, 0, 0).setOrigin(0, 0).setInteractive()
+      region.on("pointerdown", () => overlay.setVisible(false))
+      return region
+    }
+    const dismissRegions = [
+      dismissRegion(0, 0, 430, 265),
+      dismissRegion(0, 475, 430, 285),
+      dismissRegion(0, 265, 40, 210),
+      dismissRegion(390, 265, 40, 210),
+    ]
     const panel = this.add.rectangle(40, 265, 350, 210, 0xf3eedf).setOrigin(0, 0).setStrokeStyle(1.5, MainScene.BUTTON_STROKE_COLOR)
     const title = this.add.text(215, 310, "SOLVED", { color: COLORS.ink, fontFamily: "Arial, sans-serif", fontSize: "18px", fontStyle: "bold", letterSpacing: 1, resolution: RENDER_SCALE }).setOrigin(0.5)
     const target = this.add.text(215, 350, this.puzzle.target, { color: COLORS.ink, fontFamily: "Georgia, Times New Roman, serif", fontSize: "24px", fontStyle: "bold", letterSpacing: 2, resolution: RENDER_SCALE }).setOrigin(0.5)
@@ -1130,7 +1141,7 @@ export class MainScene extends Phaser.Scene {
       pendingOpeningStyle = "simultaneous"
       this.restartWithSetup(this.nextPuzzleSetup())
     })
-    overlay.add([backdrop, panel, title, target, message, button, label])
+    overlay.add([backdrop, ...dismissRegions, panel, title, target, message, button, label])
     this.finishOverlay = overlay
     this.tweens.add({ targets: overlay, alpha: 1, duration: UI_ENTRANCE_DURATION, ease: UI_ENTRANCE_EASE })
   }
